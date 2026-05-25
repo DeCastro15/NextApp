@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Next | Juventude AD Fonte de Vida</title>
+    <link rel="stylesheet" href="next.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar" aria-label="Menu do jovem">
+        <div class="sidebar-head">
+          <img class="brand-logo" src="assets/next-logo.svg" alt="Next" />
+          <div>
+            <p class="eyebrow">AD Fonte de Vida</p>
+            <strong id="roleLabel">Jovem</strong>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="Abas principais">
+          <button class="nav-item active" type="button" data-target="home">
+            Início
+          </button>
+          <button class="nav-item" type="button" data-target="agenda">
+            Agenda
+          </button>
+          <button class="nav-item" type="button" data-target="culto">
+            Andamento do culto
+          </button>
+          <button class="nav-item" type="button" data-target="conteudo">
+            Conteúdo
+          </button>
+          <button class="nav-item" type="button" data-target="loja">
+            Loja Next
+          </button>
+          <button class="nav-item" type="button" data-target="oracao">
+            Oração
+          </button>
+          <button class="nav-item" type="button" data-target="conversa">
+            Conversar
+          </button>
+          <button class="nav-item" type="button" data-target="mensagens">
+            Mensagens
+          </button>
+          <button class="nav-item" type="button" data-target="gestao">
+            Gestão
+          </button>
+          <button class="nav-item" type="button" data-target="configuracoes">
+            Configurações
+          </button>
+          <button class="nav-item locked hidden" type="button" data-target="servos" aria-hidden="true">
+            Servos
+          </button>
+          <button class="nav-item" type="button" id="logoutBtn" style="color: #dc2626; margin-top: 12px;">
+            Sair da conta
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <span class="status-dot"></span>
+          <span>Culto Next inativo</span>
+        </div>
+      </aside>
+
+      <button class="backdrop" id="backdrop" type="button" aria-label="Fechar menu"></button>
+
+      <main class="main-area">
+        <header class="topbar">
+          <button class="menu-toggle" id="menuToggle" type="button" aria-label="Abrir menu">
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+          <div>
+            <p class="eyebrow" id="topbarDate">Sábado, 23 de maio</p>
+            <h1 id="pageTitle">Início</h1>
+          </div>
+          <button class="profile-pill" type="button" data-target="configuracoes">
+            <span>JV</span>
+          </button>
+        </header>
+
+        <section class="view active" id="home" data-title="Início">
+          <div class="hero-panel">
+            <div class="hero-copy">
+              <p class="eyebrow">Próximo encontro</p>
+              <h2>Hoje tem Next às 19h30</h2>
+              <p>Louvor, palavra e comunhão na AD Fonte de Vida.</p>
+            </div>
+            <div class="cult-card">
+              <span class="live-dot"></span>
+              <strong>Andamento</strong>
+              <p id="currentStage">Inativo</p>
+            </div>
+          </div>
+
+          <div class="quick-grid" aria-label="Atalhos">
+            <button class="quick-card accent-blue" type="button" data-target="agenda">
+              <span>Agenda</span>
+              <strong>Ver mês</strong>
+            </button>
+            <button class="quick-card accent-lime" type="button" data-target="conteudo">
+              <span>Plano</span>
+              <strong>7 dias</strong>
+            </button>
+            <button class="quick-card accent-dark" type="button" data-target="oracao">
+              <span>Oração</span>
+              <strong>Pedir apoio</strong>
+            </button>
+            <button class="quick-card accent-pink" type="button" data-target="conversa">
+              <span>Chat</span>
+              <strong>Falar com líder</strong>
+            </button>
+          </div>
+
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Feed rápido</p>
+              <h2>Avisos dos líderes</h2>
+            </div>
+            <span class="small-badge">4 novos</span>
+          </div>
+          <div class="feed-list" id="feedList"></div>
+        </section>
+
+        <section class="view" id="agenda" data-title="Agenda">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow" id="agendaMonthLabel">Maio</p>
+              <h2>Cronograma Next</h2>
+            </div>
+            <select class="ghost-button" id="agendaFilter" style="cursor: pointer; outline: none;"></select>
+          </div>
+          <div class="calendar-strip" id="calendarStrip"></div>
+          <div class="agenda-list" id="agendaList"></div>
+          <aside class="agenda-detail" id="agendaDetail" aria-live="polite"></aside>
+        </section>
+
+        <section class="view" id="culto" data-title="Andamento do culto">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Ao vivo</p>
+              <h2>Status do culto</h2>
+            </div>
+            <span class="small-badge" id="cultRoleHint">Visualização</span>
+          </div>
+
+          <div class="cult-status-panel" style="grid-template-columns: 1fr; max-width: 600px; margin: 0 auto;">
+            <div style="text-align: center;">
+              <span class="live-dot" style="display: inline-block; background: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,0.2); margin-bottom: 8px;"></span>
+              <h2 id="cultStatusTitle">Culto Inativo</h2>
+              <p id="cultStatusText">Aguarde o início do culto.</p>
+            </div>
+            
+            <div class="cult-timeline" id="cultTimelineContainer">
+              </div>
+
+            <div class="admin-cult-controls" id="cultStatusOptions" aria-label="Alterar andamento do culto">
+              </div>
+          </div>
+        </section>
+
+        <section class="view" id="conteudo" data-title="Conteúdo">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Crescimento</p>
+              <h2>Playlists e planos</h2>
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Conteúdos">
+            <button class="tab active" type="button" data-content-tab="playlists">Playlists</button>
+            <button class="tab" type="button" data-content-tab="planos">Planos</button>
+          </div>
+
+          <div class="content-grid active" id="playlists"></div>
+          <div class="content-grid" id="planos"></div>
+        </section>
+
+        <section class="view" id="loja" data-title="Loja Next">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Produtos</p>
+              <h2>Lojinha do Next</h2>
+            </div>
+            <span class="small-badge">Vitrine</span>
+          </div>
+          
+          <div id="shopAdminPanel" class="hidden" style="margin-bottom: 24px;">
+            <form class="panel-form" id="shopManageForm">
+              <h3 id="shopFormTitle">Adicionar Produto</h3>
+              <input type="hidden" id="shopProductId" value="" />
+              <div class="field-grid">
+                <label>
+                  Nome do Produto
+                  <input type="text" id="shopProductTitle" placeholder="Camiseta Next" required />
+                </label>
+                <label>
+                  Valor / Preço
+                  <input type="text" id="shopProductPrice" placeholder="R$ 49,90" required />
+                </label>
+              </div>
+              <div class="field-grid">
+                <label>
+                  Quantidade em Estoque
+                  <input type="number" id="shopProductQuantity" placeholder="15" min="0" required />
+                </label>
+                <label>
+                  Imagem do Produto
+                  <input type="file" id="shopProductImage" accept="image/*" />
+                  <small id="shopProductImageHint" style="display: none; color: var(--blue); font-weight: 700; margin-top: 4px;">Imagem atual salva. Envie outra para trocar.</small>
+                </label>
+              </div>
+              <label>
+                Descrição
+                <textarea id="shopProductText" rows="3" placeholder="Insira os detalhes do modelo, tamanho ou cor" required></textarea>
+              </label>
+              <div style="display: flex; gap: 10px;">
+                <button class="primary-button" type="submit" id="shopSubmitBtn">Salvar Produto</button>
+                <button class="ghost-button" type="button" id="shopCancelBtn" style="display: none;">Cancelar</button>
+              </div>
+              <p class="form-message" id="shopAdminMessage" role="status"></p>
+            </form>
+          </div>
+
+          <div class="shop-grid" id="shopGrid"></div>
+        </section>
+
+        <section class="view" id="oracao" data-title="Oração">
+          <div class="form-layout">
+            <div class="form-intro">
+              <p class="eyebrow">Cuidado</p>
+              <h2>Pedido de oração</h2>
+              <p>Escolha como quer enviar e se deseja retorno da liderança.</p>
+            </div>
+            <form class="panel-form" id="prayerForm">
+              <label>
+                Pedido
+                <textarea name="pedido" rows="7" placeholder="Escreva seu pedido"></textarea>
+              </label>
+              <div class="choice-row">
+                <label class="choice">
+                  <input type="radio" name="identificacao" value="identificado" checked />
+                  <span>Identificado</span>
+                </label>
+                <label class="choice">
+                  <input type="radio" name="identificacao" value="anonimo" />
+                  <span>Anônimo</span>
+                </label>
+              </div>
+              <label class="toggle-row">
+                <input type="checkbox" name="retorno" checked />
+                <span>Quero receber resposta</span>
+              </label>
+              <button class="primary-button" type="submit">Enviar pedido</button>
+              <p class="form-message" id="prayerMessage" role="status"></p>
+            </form>
+          </div>
+        </section>
+
+        <section class="view" id="conversa" data-title="Conversar">
+          <div class="chat-layout">
+            <aside class="leader-panel">
+              <p class="eyebrow" id="chatListEyebrow">Escolha alguém</p>
+              <h2 id="chatListTitle">Líderes disponíveis</h2>
+              <input type="text" id="chatSearchInput" placeholder="Pesquisar por nome..." style="margin-top: 12px; margin-bottom: 4px;" />
+              <div class="leader-list" id="leaderList"></div>
+            </aside>
+
+            <div class="chat-panel">
+              <div class="chat-head">
+                <div class="chat-head-main">
+                  <span class="leader-avatar has-photo" id="chatLeaderAvatar" aria-hidden="true">
+                    <img src="assets/leaders/davi.png" alt="" />
+                  </span>
+                  <div>
+                    <p class="eyebrow">Conversa</p>
+                    <h2 id="chatLeaderName">Davi</h2>
+                  </div>
+                </div>
+                <label class="anon-toggle">
+                  <input type="checkbox" id="anonymousChat" />
+                  <span>Anônimo</span>
+                </label>
+              </div>
+              <div class="chat-window" id="chatWindow">
+                <div class="chat-bubble leader">Oi! Pode falar comigo por aqui.</div>
+                <div class="chat-bubble young">Queria conversar sobre uma dúvida.</div>
+              </div>
+              <form class="chat-form" id="chatForm">
+                <input type="text" id="chatInput" placeholder="Digite uma mensagem" />
+                <button class="primary-button compact" type="submit">Enviar</button>
+              </form>
+              <p class="safety-note">Mensagens anônimas podem ser auditadas por Pastor ou Missionária em situações de cuidado.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="mensagens" data-title="Mensagens">
+          <div class="chat-layout">
+            <aside class="leader-panel">
+              <p class="eyebrow">Conversas recebidas</p>
+              <h2>Caixa da liderança</h2>
+              <div class="leader-list" id="threadList"></div>
+            </aside>
+
+            <div class="chat-panel">
+              <div class="chat-head">
+                <div>
+                  <p class="eyebrow">Atendimento</p>
+                  <h2 id="threadTitle">Selecione uma conversa</h2>
+                </div>
+                <span class="small-badge" id="threadMeta">0 mensagens</span>
+              </div>
+              <div class="chat-window" id="leaderChatWindow">
+                <div class="chat-bubble leader">As conversas dos jovens aparecem aqui.</div>
+              </div>
+              <form class="chat-form" id="leaderReplyForm">
+                <input type="text" id="leaderReplyInput" placeholder="Responder mensagem" />
+                <button class="primary-button compact" type="submit">Enviar</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="servos" data-title="Servos">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Equipe</p>
+              <h2>Área dos Servos</h2>
+            </div>
+          </div>
+          <div class="servant-grid">
+            <article class="servant-card">
+              <span>Escala</span>
+              <strong>Recepção - Sábado 19h</strong>
+            </article>
+            <article class="servant-card">
+              <span>Tarefa</span>
+              <strong>Chegar 30 min antes</strong>
+            </article>
+            <article class="servant-card">
+              <span>Aviso interno</span>
+              <strong>Reunião rápida após o culto</strong>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="gestao" data-title="Gestão">
+          
+          <form class="panel-form" id="roleChangeForm">
+              <h3>Alterar Cargo do Usuário</h3>
+              <label>
+                Membro
+                <select id="userToChangeRole"></select>
+              </label>
+              <label>
+                Novo Cargo
+                <select id="newUserRole">
+                  <option value="jovem">Jovem</option>
+                  <option value="responsavel">Responsável</option>
+                  <option value="lider">Líder</option>
+                  <option value="admin">Administrador</option>
+                </select>
+              </label>
+              <button class="primary-button" type="submit">Atualizar Cargo</button>
+              <p class="form-message" id="roleChangeMessage" role="status"></p>
+            </form>
+
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Liderança</p>
+              <h2>Adicionar conteúdo</h2>
+            </div>
+          </div>
+
+          <div class="admin-grid">
+            <form class="panel-form" id="postForm">
+              <h3>Aviso no feed</h3>
+              <label>
+                Tag
+                <input type="text" id="postTag" placeholder="Aviso" />
+              </label>
+              <label>
+                Título
+                <input type="text" id="postTitle" placeholder="Ex.: Culto Next às 19h30" />
+              </label>
+              <label>
+                Texto
+                <textarea id="postText" rows="4" placeholder="Escreva o aviso"></textarea>
+              </label>
+              <button class="primary-button" type="submit">Publicar aviso</button>
+              <p class="form-message" id="postMessage" role="status"></p>
+            </form>
+
+            <form class="panel-form" id="eventForm">
+              <h3>Evento na agenda</h3>
+              <div class="field-grid">
+                <label>
+                  Dia
+                  <input type="number" id="eventDate" min="1" max="31" placeholder="23" />
+                </label>
+                <label>
+                  Horário
+                  <input type="text" id="eventTime" placeholder="19h30" />
+                </label>
+              </div>
+              <label>
+                Título
+                <input type="text" id="eventTitle" placeholder="Nome do evento" />
+              </label>
+              <label>
+                Público
+                <select id="eventAudience"></select>
+              </label>
+              <label>
+                Detalhes
+                <textarea id="eventDetail" rows="4" placeholder="Detalhes do evento"></textarea>
+              </label>
+              <button class="primary-button" type="submit">Adicionar evento</button>
+              <p class="form-message" id="eventMessage" role="status"></p>
+            </form>
+
+            <form class="panel-form" id="productForm">
+              <h3>Produto da lojinha</h3>
+              <label>
+                Produto
+                <input type="text" id="productTitle" placeholder="Camiseta Next" />
+              </label>
+              <label>
+                Descrição
+                <input type="text" id="productText" placeholder="Modelo, cor ou observação" />
+              </label>
+              <label>
+                Preço
+                <input type="text" id="productPrice" placeholder="R$ 49,90" />
+              </label>
+              <button class="primary-button" type="submit">Adicionar produto</button>
+              <p class="form-message" id="productMessage" role="status"></p>
+            </form>
+
+            <form class="panel-form" id="servoForm">
+              <h3>Liberar área Servos</h3>
+              <label>
+                Jovem
+                <select id="servoUser"></select>
+              </label>
+              <button class="primary-button" type="submit">Dar cargo de Servo</button>
+              <p class="form-message" id="servoMessage" role="status"></p>
+            </form>
+
+            <article class="panel-form">
+              <h3>Pedidos de oração</h3>
+              <div class="admin-list" id="prayerAdminList"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="configuracoes" data-title="Configurações">
+          <div class="settings-layout">
+            <aside class="settings-preview">
+              <div class="settings-avatar" id="settingsAvatar">JV</div>
+              <div>
+                <p class="eyebrow">Meu perfil</p>
+                <h2 id="settingsPreviewName">João V.</h2>
+                <p id="settingsPreviewMeta">13 a 17 anos | AD Fonte de Vida</p>
+              </div>
+            </aside>
+
+            <form class="panel-form settings-form" id="profileForm">
+              <label>
+                Foto
+                <input type="file" id="profilePhoto" name="foto" accept="image/*" />
+              </label>
+
+              <div class="field-grid">
+                <label>
+                  Nome
+                  <input type="text" id="profileName" name="nome" placeholder="Seu nome" value="João V." />
+                </label>
+                <label>
+                  Idade
+                  <input type="number" id="profileAge" name="idade" min="13" max="17" placeholder="Ex.: 15" />
+                </label>
+                <label>
+                  Aniversário
+                  <input type="date" id="profileBirthday" name="aniversario" />
+                </label>
+                <label>
+                  Telefone
+                  <input type="tel" id="profilePhone" name="telefone" placeholder="(00) 00000-0000" />
+                </label>
+                <label>
+                  Responsável
+                  <input type="text" id="profileResponsible" name="responsavel" placeholder="Nome do responsável" />
+                </label>
+                <label style="opacity: 0.7;">
+                  Cargo
+                  <input type="text" id="profileRole" name="cargo" placeholder="Membro Next" value="Membro Next" readonly style="background: #f3f4f6; cursor: not-allowed;" />
+                </label>
+              </div>
+
+              <button class="primary-button" type="submit">Salvar perfil</button>
+              <p class="form-message" id="profileMessage" role="status"></p>
+            </form>
+          </div>
+        </section>
+
+        <section class="view" id="perfil" data-title="Perfil">
+          <div class="profile-card">
+            <div class="avatar-large">JV</div>
+            <div>
+              <p class="eyebrow">Membro Next</p>
+              <h2>João V.</h2>
+              <p>13 a 17 anos | AD Fonte de Vida</p>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="supabase-config.js"></script>
+    
+    <script src="next.js"></script>
+  </body>
+</html>

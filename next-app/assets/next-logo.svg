@@ -1,0 +1,13 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="nextBlue" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F8BFF"/>
+      <stop offset="1" stop-color="#3A63F2"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="10" fill="url(#nextBlue)"/>
+  <g fill="#FFFFFF" font-family="Segoe UI, Arial, sans-serif" font-weight="800" font-size="92">
+    <text x="45" y="99">ne</text>
+    <text x="45" y="174">xt</text>
+  </g>
+</svg>
