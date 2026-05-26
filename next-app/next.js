@@ -647,6 +647,14 @@ function renderChatContacts() {
   listEl.innerHTML = contactsHTML || `<p class="safety-note">Nenhum contato encontrado.</p>`;
 }
 
+function scrollChatToBottom(windowEl, force = false) {
+  if (!windowEl) return;
+  const isNearBottom = windowEl.scrollHeight - windowEl.scrollTop - windowEl.clientHeight < 80;
+  if (force || isNearBottom) {
+    windowEl.scrollTop = windowEl.scrollHeight;
+  }
+}
+
 function renderYoungChat() {
   const chatWindow = document.querySelector("#chatWindow");
   if (!chatWindow) return;
@@ -656,7 +664,14 @@ function renderYoungChat() {
   const anonToggle = document.querySelector(".anon-toggle");
   if (anonToggle) anonToggle.style.display = isLeader ? "none" : "flex";
 
-  const targetLeaderName = isLeader ? currentUser.name : chatTargetName;
+  let targetLeaderName;
+  if (isLeader) {
+    targetLeaderName = leaderNames.find(n =>
+      currentUser.name.toLowerCase().includes(n.toLowerCase())
+    ) || currentUser.name;
+  } else {
+    targetLeaderName = chatTargetName;
+  }
   const targetUserId = isLeader ? chatTargetId : currentUser.id;
 
   const threadId = threadIdFor(targetLeaderName, targetUserId);
@@ -693,6 +708,8 @@ function renderYoungChat() {
         })
         .join("")
     : `<div class="chat-bubble system">Inicie a conversa enviando uma mensagem.</div>`;
+
+  scrollChatToBottom(chatWindow);
 }
 
 let currentGroupId = "Geral";
@@ -821,6 +838,8 @@ function renderGroupChat() {
       </div>
     `;
   }).join("") : `<div class="chat-bubble system">Nenhuma mensagem neste grupo ainda. Mande um aviso!</div>`;
+
+  scrollChatToBottom(windowEl);
 }
 
 function saveGroupMessage(text) {
@@ -855,7 +874,10 @@ function saveYoungMessage(text) {
   const isLeader = ["lider", "pastor", "missionaria", "admin"].includes(currentUser.role);
   const anonymous = isLeader ? false : (document.querySelector("#anonymousChat")?.checked || false);
 
-  const targetLeaderName = isLeader ? currentUser.name : chatTargetName;
+  const leaderCanonicalName = isLeader
+    ? (leaderNames.find(n => currentUser.name.toLowerCase().includes(n.toLowerCase())) || currentUser.name)
+    : chatTargetName;
+  const targetLeaderName = leaderCanonicalName;
   const targetUserId = isLeader ? chatTargetId : currentUser.id;
 
   saveItem("next_messages", {
@@ -899,7 +921,10 @@ function threadIdFor(leaderName, userId = currentUser.id) {
 
 function canSeeThread(message) {
   if (["lider", "pastor", "missionaria"].includes(currentUser.role)) {
-    return message.leaderName === currentUser.name;
+    const canonical = leaderNames.find(n =>
+      currentUser.name.toLowerCase().includes(n.toLowerCase())
+    ) || currentUser.name;
+    return message.leaderName === canonical || message.leaderName === currentUser.name;
   }
   return message.senderId === currentUser.id;
 }
@@ -1001,6 +1026,8 @@ function renderSelectedThread() {
       `;
     })
     .join("");
+
+  scrollChatToBottom(windowEl);
 }
 
 function saveLeaderReply(text) {
@@ -1441,6 +1468,7 @@ function bindEvents() {
     saveGroupMessage(input.value.trim());
     input.value = "";
     renderGroupChat();
+    scrollChatToBottom(document.querySelector("#groupChatWindow"), true);
   });
 
   document.querySelector("#groupChatWindow")?.addEventListener("click", (e) => {
@@ -1638,6 +1666,7 @@ function bindEvents() {
     saveYoungMessage(text);
     input.value = "";
     renderYoungChat();
+    scrollChatToBottom(document.querySelector("#chatWindow"), true);
   });
 
   document.querySelector("#threadList")?.addEventListener("click", (event) => {
@@ -1655,6 +1684,7 @@ function bindEvents() {
     saveLeaderReply(text);
     input.value = "";
     renderLeaderInbox();
+    scrollChatToBottom(document.querySelector("#leaderChatWindow"), true);
   });
 
   document.querySelector("#agendaList")?.addEventListener("click", (event) => {

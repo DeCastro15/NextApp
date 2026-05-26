@@ -53,6 +53,15 @@ body.dark-mode .menu-toggle {
   border-color: #374151;
 }
 
+/* Tab ativo no dark mode mantém destaque */
+body.dark-mode .tab {
+  color: #9ca3af;
+}
+body.dark-mode .tab.active {
+  background: var(--blue);
+  color: #fff;
+}
+
 body.dark-mode .agenda-date {
   background: #1e3a5f;
   color: #93c5fd;
@@ -1006,11 +1015,12 @@ select:focus {
 }
 
 .chat-window {
-  min-height: 360px;
-  display: grid;
-  align-content: end;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   padding: 14px;
+  height: 360px;
+  overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #f9fafb;
@@ -1021,28 +1031,36 @@ select:focus {
   padding: 11px 12px;
   border-radius: 8px;
   font-weight: 700;
+  /* Quebra texto longo dentro do balão */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .chat-bubble.leader {
-  justify-self: start;
+  align-self: flex-start;
+  margin-right: auto;
   background: #fff;
   color: var(--ink);
   border: 1px solid var(--line);
 }
 
 .chat-bubble.young {
-  justify-self: end;
+  align-self: flex-end;
+  margin-left: auto;
   background: var(--blue);
   color: #fff;
 }
 
 .chat-bubble.system {
-  justify-self: center;
+  align-self: center;
   max-width: 88%;
   background: transparent;
   color: var(--muted);
   padding: 4px 0;
   font-size: 0.86rem;
+  text-align: center;
 }
 
 .chat-form {
@@ -1392,8 +1410,11 @@ select:focus {
   }
 
   .chat-bubble {
-    max-width: 88%;
+    max-width: 85%;
   }
+
+  .chat-bubble.young  { align-self: flex-end;   margin-left: auto;  }
+  .chat-bubble.leader { align-self: flex-start;  margin-right: auto; }
 
   .cult-timeline {
     display: flex !important;
