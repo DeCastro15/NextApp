@@ -45,15 +45,23 @@
           <button class="nav-item" type="button" data-target="gestao">
             Gestão
           </button>
-          <button class="nav-item" type="button" data-target="configuracoes">
-            Configurações
-          </button>
           <button class="nav-item locked hidden" type="button" data-target="servos" aria-hidden="true">
             Servos
+          </button>
+          <button class="nav-item" type="button" data-target="configuracoes">
+            Configurações
           </button>
           <button class="nav-item" type="button" id="logoutBtn" style="color: #dc2626; margin-top: 12px;">
             Sair da conta
           </button>
+          <div class="theme-row">
+            <span id="themeToggleText">🌙 Escuro</span>
+            <button type="button" id="themeToggleBtn"
+                    class="theme-switch" role="switch"
+                    aria-checked="false" aria-label="Alternar modo escuro">
+              <span class="theme-slider"></span>
+            </button>
+          </div>
         </nav>
 
         <div class="sidebar-footer">

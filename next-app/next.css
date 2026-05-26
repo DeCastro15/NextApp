@@ -13,6 +13,103 @@
   --text-base: 15px;
 }
 
+/* Paleta do Modo Escuro */
+body.dark-mode {
+  --ink: #f9fafb;       /* Texto fica quase branco */
+  --muted: #9ca3af;     /* Texto secundário claro */
+  --line: #374151;      /* Bordas ficam cinza escuro */
+  --surface: #1f2937;   /* Fundo dos cartões e menus escuro */
+  --soft: #111827;      /* Fundo da tela bem escuro */
+  --shadow: 0 18px 60px rgba(0, 0, 0, 0.4); /* Sombra mais forte */
+}
+
+/* ---- Dark mode: fundos hardcoded que precisam adaptar ---- */
+body.dark-mode textarea,
+body.dark-mode input[type="text"],
+body.dark-mode input[type="number"],
+body.dark-mode input[type="date"],
+body.dark-mode input[type="tel"],
+body.dark-mode input[type="email"],
+body.dark-mode input[type="password"],
+body.dark-mode select {
+  background: #1f2937;
+  color: #f9fafb;
+  border-color: #374151;
+}
+
+body.dark-mode input::placeholder,
+body.dark-mode textarea::placeholder {
+  color: #6b7280;
+}
+
+body.dark-mode .day-chip,
+body.dark-mode .ghost-button,
+body.dark-mode .tabs,
+body.dark-mode .status-option,
+body.dark-mode .menu-toggle {
+  background: #1f2937;
+  color: #f9fafb;
+  border-color: #374151;
+}
+
+body.dark-mode .agenda-date {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+body.dark-mode .agenda-audience,
+body.dark-mode .small-badge {
+  background: #1e3a5f;
+  color: #93c5fd;
+}
+
+body.dark-mode .choice,
+body.dark-mode .toggle-row,
+body.dark-mode .anon-toggle {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+body.dark-mode .leader-item {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+body.dark-mode .leader-item.active {
+  background: #1e3a5f;
+  border-color: var(--blue);
+}
+
+body.dark-mode .chat-window {
+  background: #111827;
+  border-color: #374151;
+}
+
+body.dark-mode .chat-bubble.leader {
+  background: #1f2937;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+body.dark-mode .admin-list-item {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+body.dark-mode .progress-bar {
+  background: #374151;
+}
+
+body.dark-mode #profileRole {
+  background: #374151 !important;
+  color: #9ca3af;
+}
+
+/* Garante que os cartões usem a variável de superfície ao invés de branco fixo */
+.login-card, .intro, .profile-card, .content-card, .agenda-card, .shop-item, .chat-window {
+  background: var(--surface) !important;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -1294,4 +1391,97 @@ select:focus {
     display: grid;
     gap: 8px;
   }
+
+  /* ========================================================
+   CORREÇÕES DO MODO ESCURO GLOBAIS (TELAS GRANDES E CELULAR)
+   ======================================================== */
+
+  /* 1. Corrige o texto sumindo no menu lateral (Início) */
+  body.dark-mode .nav-item:hover,
+  body.dark-mode .nav-item.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+
+  /* 2. Corrige as tags do feed brancas e as deixa azul moderno */
+  .feed-tag {
+    background: rgba(47, 115, 248, 0.15) !important;
+    color: var(--blue) !important;
+  }
+
+  /* 3. Corrige a bolinha do perfil (JV) sumindo no topo direito */
+  body.dark-mode .profile-pill {
+    background: #374151; /* Cinza escuro para contraste */
+    color: #fff;
+  }
+
+
+  /* ========================================================
+    NOVO TOGGLE SWITCH (ESTILO IOS, MAIOR E ANIMADO)
+    ======================================================== */
+
+  .theme-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: auto;
+    border-top: 1px solid rgba(255,255,255,.12);
+    padding: 16px 16px 0;
+    color: rgba(255,255,255,.75);
+    font-size: .88rem;
+    font-weight: 700;
+  }
+
+  .theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 56px;          /* Switch mais largo, igual a foto */
+    height: 32px;         /* Switch mais alto */
+    flex-shrink: 0;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 32px;
+    outline: none;
+  }
+
+  .theme-switch:focus-visible { 
+    outline: 2px solid var(--blue); 
+    outline-offset: 2px;
+  }
+
+  .theme-slider {
+    position: absolute;
+    inset: 0;
+    background: #d1d5db; /* Fundo cinza suave quando claro */
+    border-radius: 32px;
+    transition: background-color 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+    pointer-events: none;
+  }
+
+  .theme-slider::before {
+    content: "";
+    position: absolute;
+    width: 24px;          /* Bolinha bem maior */
+    height: 24px;         
+    left: 4px;
+    bottom: 4px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    transition: transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1); /* Animação suave deslizando */
+  }
+
+  /* Quando ativado (Modo Escuro), o fundo ganha o Verde da sua imagem de referência */
+  .theme-switch[aria-checked="true"] .theme-slider {
+    background: #00a870; 
+  }
+
+  /* Desliza a bolinha com precisão milimétrica para a direita */
+  .theme-switch[aria-checked="true"] .theme-slider::before {
+    transform: translateX(24px); 
+  }
+
 }

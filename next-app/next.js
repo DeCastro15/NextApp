@@ -1119,6 +1119,27 @@ function bindEvents() {
     });
   }
 
+  // --- LÓGICA DO MODO ESCURO (COM SWITCH) ---
+  const themeBtn = document.querySelector("#themeToggleBtn");
+  const themeText = document.querySelector("#themeToggleText");
+  
+  function applyTheme(dark){
+    document.body.classList.toggle("dark-mode", dark);
+    if (themeBtn)  themeBtn.setAttribute("aria-checked", dark ? "true" : "false");
+    if (themeText) themeText.textContent = dark ? "☀️ Claro" : "🌙 Escuro";
+    localStorage.setItem("next_theme", dark ? "dark" : "light");
+  }
+
+  // Carrega preferência salva
+  applyTheme(localStorage.getItem("next_theme") === "dark");
+      
+  if(themeBtn) {
+    themeBtn.addEventListener("click", () => {
+      const isDark = themeBtn.getAttribute("aria-checked") !== "true";
+      applyTheme(isDark);
+    });
+  }
+
   // Leitor de Imagem para a Lojinha
   const shopImageInput = document.querySelector("#shopProductImage");
   if (shopImageInput) {
