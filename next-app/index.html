@@ -195,7 +195,10 @@
             <input id="email" type="email" autocomplete="email" required />
           </label>
           <label>
-            Senha
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              Senha
+              <a href="#" id="showForgotBtn" tabindex="-1" style="font-size: 0.85rem; color: var(--blue); text-decoration: none; font-weight: 800;">Esqueceu a senha?</a>
+            </div>
             <input id="password" type="password" autocomplete="current-password" required />
           </label>
           <button type="submit">Acessar</button>
@@ -219,12 +222,23 @@
           <p class="message" id="regMessage" role="status"></p>
         </form>
 
+        <form id="forgotForm" style="display: none;">
+          <label>
+            E-mail cadastrado
+            <input id="forgotEmail" type="email" placeholder="nome@email.com" required />
+          </label>
+          <button type="submit">Enviar link de recuperação</button>
+          <button type="button" id="backToLoginBtn" style="background: transparent; color: var(--ink); border: 1px solid var(--line);">Voltar para o login</button>
+          <p class="message" id="forgotMessage" role="status"></p>
+        </form>
+
         <button id="toggleFormBtn" type="button" style="margin-top: 16px; width: 100%; background: transparent; color: var(--blue); border: 1px solid var(--line); border-radius: 8px; padding: 12px; cursor: pointer; font-weight: bold;">
           Não tem conta? Cadastre-se
         </button>
       </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script>
       const currentUser = NextAuth.currentUser();
@@ -234,8 +248,12 @@
 
       const loginForm = document.querySelector("#loginForm");
       const registerForm = document.querySelector("#registerForm");
+      const forgotForm = document.querySelector("#forgotForm");
       const toggleBtn = document.querySelector("#toggleFormBtn");
+      const showForgotBtn = document.querySelector("#showForgotBtn");
+      const backToLoginBtn = document.querySelector("#backToLoginBtn");
       const cardTitle = document.querySelector("#cardTitle");
+      const cardDesc = document.querySelector("#cardDesc");
 
       // Alternar entre Login e Cadastro
       toggleBtn.addEventListener("click", () => {
@@ -243,7 +261,29 @@
         loginForm.style.display = isLogin ? "none" : "grid";
         registerForm.style.display = isLogin ? "grid" : "none";
         cardTitle.textContent = isLogin ? "Criar Conta" : "Entrar";
+        cardDesc.textContent = isLogin ? "Preencha seus dados para começar." : "Use uma conta cadastrada ou crie a sua.";
         toggleBtn.textContent = isLogin ? "Já tenho conta. Fazer login" : "Não tem conta? Cadastre-se";
+      });
+
+      // Mostrar formulário de "Esqueceu a senha"
+      showForgotBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        loginForm.style.display = "none";
+        registerForm.style.display = "none";
+        forgotForm.style.display = "grid";
+        toggleBtn.style.display = "none";
+        cardTitle.textContent = "Recuperar Senha";
+        cardDesc.textContent = "Enviaremos um link de recuperação para o seu e-mail.";
+      });
+
+      // Voltar para o Login
+      backToLoginBtn.addEventListener("click", () => {
+        forgotForm.style.display = "none";
+        loginForm.style.display = "grid";
+        toggleBtn.style.display = "block";
+        cardTitle.textContent = "Entrar";
+        cardDesc.textContent = "Use uma conta cadastrada ou crie a sua.";
+        document.querySelector("#forgotMessage").textContent = "";
       });
 
       // Lógica de Login
@@ -273,12 +313,20 @@
         }
         window.location.href = "next.html"; // Redireciona logado
       });
+
+      // Lógica de Recuperação de Senha
+      forgotForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const msg = document.querySelector("#forgotMessage");
+        msg.textContent = "Enviando...";
+        msg.style.color = "var(--ink)";
+        
+        await NextAuth.resetPassword(document.querySelector("#forgotEmail").value.trim());
+        
+        msg.textContent = "Se o e-mail estiver cadastrado, você receberá um link de recuperação.";
+        msg.style.color = "#10b981"; // Cor verde
+        document.querySelector("#forgotEmail").value = "";
+      });
     </script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script src="supabase-config.js"></script>
-    
-    <script src="next.js"></script>
   </body>
 </html>

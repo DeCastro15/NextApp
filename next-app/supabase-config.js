@@ -194,6 +194,28 @@ const NextAuth = (() => {
     window.location.href = 'index.html';
   }
 
+  async function resetPassword(email) {
+    // Força a utilização do cliente Supabase real apenas para disparar o e-mail
+    const client = window.originalSupabaseClient || supabaseClient;
+    
+    if (!client) {
+      console.error("Supabase não está ligado.");
+      return false;
+    }
+
+    // Chama o servidor real do Supabase para enviar o e-mail
+    const { data, error } = await client.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/reset-password.html',
+    });
+
+    if (error) {
+      console.error("Erro ao enviar e-mail:", error.message);
+      return false;
+    }
+    
+    return true;
+  }
+
   function currentUser() {
     try {
       return JSON.parse(localStorage.getItem(SESSION_KEY));
@@ -214,7 +236,7 @@ const NextAuth = (() => {
     return source.map(({ password, ...u }) => u);
   }
 
-  return { login, logout, currentUser, updateSession, getMockUsers, MOCK_USERS, register };
+  return { login, logout, currentUser, updateSession, getMockUsers, MOCK_USERS, register, resetPassword };
 })();
 
 // ---------------------------------------------------------------------------
@@ -222,6 +244,8 @@ const NextAuth = (() => {
 // ---------------------------------------------------------------------------
 // Ativa o cliente Supabase usando as chaves que você já colocou no topo do arquivo
 const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey) : null;
+// Permite que a tela de reset use o cliente diretamente
+window.originalSupabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey) : null;
 
 // ---------------------------------------------------------------------------
 // NextDB — Banco de Dados Híbrido (Rápido no Local + Salva na Nuvem)
