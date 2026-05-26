@@ -327,22 +327,29 @@ const NextDB = (() => {
   }
 
   async function save(collection, item) {
-    // 1. Salva imediato localmente para o utilizador não sentir atrasos
+    // Garante que createdAt existe e é número (timestamp ms)
+    if (!item.createdAt) {
+      item = { ...item, createdAt: Date.now() };
+    }
+
+    // Salva localmente
     const items = getAll(collection);
     const idx = items.findIndex((i) => i.id === item.id);
     if (idx >= 0) {
       items[idx] = { ...items[idx], ...item };
     } else {
-      items.unshift({ ...item, id: item.id || `${Date.now()}` });
+      items.unshift({ ...item });
     }
     localStorage.setItem(collection, JSON.stringify(items));
 
-    // 2. Envia para o Supabase (Incluindo Grupos, Eventos e Escalas)
-    const cloudTables = ['next_messages', 'next_prayers', 'next_group_messages', 'next_events', 'next_scales', 'next_applications', 'next_products', 'next_posts'];
+    // Envia para o Supabase
+    const cloudTables = ['next_messages', 'next_prayers', 'next_group_messages', 
+                        'next_events', 'next_scales', 'next_applications', 
+                        'next_products', 'next_posts'];
 
     if (supabaseClient && cloudTables.includes(collection)) {
       const { error } = await supabaseClient.from(collection).upsert(item);
-      if (error) console.error(`🚨 Erro ao enviar para ${collection}:`, error.message);
+      if (error) console.error(`Erro ao enviar para ${collection}:`, error.message);
     }
     return item;
   }
@@ -370,16 +377,36 @@ const NextDB = (() => {
 
   // 3. Puxa TODOS os dados atualizados com garantia de reescrita
   async function syncFromCloud() {
-    if (!supabaseClient) return;
-    const cloudTables = ['next_messages', 'next_prayers', 'next_group_messages', 'next_events', 'next_scales', 'next_posts'];
+  if (!supabaseClient) return;
 
-    for (const table of cloudTables) {
-      const { data, error } = await supabaseClient.from(table).select('*');
-      if (data && !error) {
-        localStorage.setItem(table, JSON.stringify(data));
-      }
+  // Tabelas comuns — sem ordenação especial
+  const simpleTables = ['next_prayers', 'next_events', 'next_scales', 'next_posts'];
+  for (const table of simpleTables) {
+    const { data, error } = await supabaseClient.from(table).select('*');
+    if (data && !error) {
+      localStorage.setItem(table, JSON.stringify(data));
     }
   }
+
+  // Tabelas de mensagens — sempre ordenadas por createdAt
+  const messageTables = ['next_messages', 'next_group_messages'];
+  for (const table of messageTables) {
+    const { data, error } = await supabaseClient
+      .from(table)
+      .select('*')
+      .order('createdAt', { ascending: true });
+
+    if (data && !error) {
+      const normalized = data.map(msg => ({
+        ...msg,
+        createdAt: typeof msg.createdAt === 'string'
+          ? new Date(msg.createdAt).getTime()
+          : (msg.createdAt || 0)
+      }));
+      localStorage.setItem(table, JSON.stringify(normalized));
+    }
+  }
+}
 
   return { getAll, getOne, save, remove, getValue, setValue, syncFromCloud };
 })();

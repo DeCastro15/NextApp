@@ -678,6 +678,7 @@ function renderYoungChat() {
 
   const messages = getMessages()
     .filter((m) => m.threadId === threadId)
+    .map(m => ({ ...m, createdAt: Number(m.createdAt) || 0 })) // ← normaliza tipo
     .sort((a, b) => a.createdAt - b.createdAt);
 
   document.querySelector("#chatLeaderName").textContent = chatTargetName || "Selecione alguém";
@@ -808,7 +809,9 @@ function renderGroupChat() {
   if (titleEl) titleEl.textContent = groupNames[currentGroupId];
 
   const allMsgs = getAll("next_group_messages", []).filter(m => m.groupId === currentGroupId);
-  const orderedMsgs = allMsgs.sort((a, b) => a.createdAt - b.createdAt);
+  const orderedMsgs = allMsgs
+  .map(m => ({ ...m, createdAt: Number(m.createdAt) || 0 })) // ← normaliza tipo
+  .sort((a, b) => a.createdAt - b.createdAt);
   
   const pinnedMsgs = orderedMsgs.filter(m => m.isPinned);
   const latestPinned = pinnedMsgs.length > 0 ? pinnedMsgs[pinnedMsgs.length - 1] : null;
@@ -845,7 +848,7 @@ function renderGroupChat() {
 function saveGroupMessage(text) {
   if (!text) return;
   saveItem("next_group_messages", {
-    id: `gmsg_${Date.now()}`,
+    id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     groupId: currentGroupId,
     senderId: currentUser.id,
     senderName: currentUser.name,
@@ -881,7 +884,7 @@ function saveYoungMessage(text) {
   const targetUserId = isLeader ? chatTargetId : currentUser.id;
 
   saveItem("next_messages", {
-    id: `msg_${Date.now()}`,
+    id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     threadId: threadIdFor(targetLeaderName, targetUserId),
     leaderName: targetLeaderName,
     senderId: currentUser.id,
@@ -1212,11 +1215,40 @@ function renderPrayerAdminList() {
     : `<p class="safety-note">Nenhum pedido de oracao recebido ainda.</p>`;
 }
 
+function renderApplicationsList() {
+  const list = document.querySelector("#applicationsAdminList");
+  if (!list) return;
+  
+  // Puxa as inscrições que ainda não foram resolvidas
+  const apps = getAll("next_applications", []).filter(a => a.status === "pending");
+
+  list.innerHTML = apps.length
+    ? apps.map(app => `
+        <article class="admin-list-item" style="gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+              <strong style="font-size: 1.05rem;">${app.userName}</strong>
+              <span style="display: block; font-size: 0.8rem; color: var(--blue); font-weight: 800; text-transform: uppercase;">Deseja: ${app.dept}</span>
+            </div>
+            <span class="small-badge">${app.userAge}</span>
+          </div>
+          <p style="font-size: 0.85rem;"><strong>Motivo:</strong> ${app.reason}</p>
+          <p style="font-size: 0.85rem; margin-top: 0;"><strong>Batizado:</strong> ${app.isBaptized} | <strong>Fundamentos:</strong> ${app.hasFundamentals}</p>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <button class="primary-button compact btn-approve-app" data-app-id="${app.id}" type="button" style="flex: 1; font-size: 0.8rem; min-height: 36px; padding: 0;">Adicionar à Equipe</button>
+            <button class="ghost-button btn-discuss-app" data-app-id="${app.id}" type="button" style="flex: 1; font-size: 0.8rem; min-height: 36px; padding: 0;">Marcar Conversa</button>
+          </div>
+        </article>
+      `).join("")
+    : `<p class="safety-note">Nenhuma inscrição pendente no momento.</p>`;
+}
+
 function renderAdminLists() {
   if (!canManage()) return;
   renderEventAudienceOptions();
   renderServoOptions();
   renderPrayerAdminList();
+  renderApplicationsList();
   if (canManageAll()) renderRoleAdminOptions();
 }
 
@@ -1524,6 +1556,8 @@ function bindEvents() {
   appReason?.addEventListener("input", () => {
     if (appReason.value.trim().length > 8) {
       qGroup2.style.display = "block";
+      qGroup3.style.display = "block";
+      submitAppBtn.style.display = "block";
     } else {
       qGroup2.style.display = "none";
       qGroup3.style.display = "none";
@@ -1534,15 +1568,14 @@ function bindEvents() {
   switchBap?.addEventListener("click", () => {
     const isChecked = switchBap.getAttribute("aria-checked") === "true";
     switchBap.setAttribute("aria-checked", !isChecked ? "true" : "false");
-    qGroup3.style.display = "block";
   });
 
   switchFund?.addEventListener("click", () => {
     const isChecked = switchFund.getAttribute("aria-checked") === "true";
     switchFund.setAttribute("aria-checked", !isChecked ? "true" : "false");
-    submitAppBtn.style.display = "block";
   });
 
+  // 1. Envio da Inscrição pelo Jovem
   document.querySelector("#applicationForm")?.addEventListener("submit", (e) => {
     e.preventDefault();
     
@@ -1550,21 +1583,79 @@ function bindEvents() {
       id: `app_${Date.now()}`,
       userId: currentUser.id,
       userName: currentUser.name,
-      userAge: currentUser.age || "Não especificada",
+      userAge: currentUser.age ? `${currentUser.age} anos` : "Idade não informada",
       dept: document.querySelector("#appDept").value,
       reason: appReason.value.trim(),
       isBaptized: switchBap.getAttribute("aria-checked") === "true" ? "Sim" : "Não",
       hasFundamentals: switchFund.getAttribute("aria-checked") === "true" ? "Sim" : "Não",
+      status: "pending", // Status inicial para cair na caixa da liderança
       createdAt: Date.now()
     });
 
-    document.querySelector("#appMessage").textContent = "Sua inscrição foi recebida com sucesso pela liderança!";
+    document.querySelector("#appMessage").textContent = "Sua inscrição foi enviada com sucesso para a liderança!";
     e.target.reset();
     switchBap.setAttribute("aria-checked", "false");
     switchFund.setAttribute("aria-checked", "false");
     qGroup2.style.display = "none";
     qGroup3.style.display = "none";
     submitAppBtn.style.display = "none";
+  });
+
+  // 2. Painel da Liderança: Decidir o que fazer com a Inscrição
+  document.querySelector("#applicationsAdminList")?.addEventListener("click", (e) => {
+    const approveBtn = e.target.closest(".btn-approve-app");
+    const discussBtn = e.target.closest(".btn-discuss-app");
+
+    if (approveBtn) {
+      const appId = approveBtn.dataset.appId;
+      const apps = getAll("next_applications", []);
+      const appObj = apps.find(a => a.id === appId);
+      if (!appObj) return;
+
+      const user = getUsers().find(u => u.id === appObj.userId);
+      if (user) {
+        // Atualiza o jovem adicionando o novo setor e a permissão de servo
+        const types = user.servoType || [];
+        if (!types.includes(appObj.dept)) types.push(appObj.dept);
+        saveItem("next_users", { ...user, hasServo: true, servoType: types });
+      }
+      
+      // Marca a inscrição como resolvida para sumir da tela
+      appObj.status = "resolved";
+      saveItem("next_applications", appObj);
+      renderApplicationsList();
+      renderServoOptions(); // Atualiza as outras caixinhas de gestão
+      alert(`${appObj.userName} foi adicionado à equipe de ${appObj.dept} com sucesso!`);
+    }
+
+    if (discussBtn) {
+      const appId = discussBtn.dataset.appId;
+      const apps = getAll("next_applications", []);
+      const appObj = apps.find(a => a.id === appId);
+      if (!appObj) return;
+
+      // Cria a mensagem automática em nome do líder logado para o jovem
+      const targetLeaderName = currentUser.name;
+      const threadId = threadIdFor(targetLeaderName, appObj.userId);
+      
+      saveItem("next_messages", {
+        id: `msg_${Date.now()}`,
+        threadId: threadId,
+        leaderName: targetLeaderName,
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        senderRole: currentUser.role,
+        anonymous: false,
+        text: `Olá, ${appObj.userName}! Vi a sua inscrição para servir na equipe de ${appObj.dept}. Gostaria de marcar uma conversa rápida com você para alinharmos os próximos passos. Quando você tem disponibilidade?`,
+        createdAt: Date.now(),
+      });
+
+      // Marca como resolvida para sumir da tela de pendências
+      appObj.status = "resolved";
+      saveItem("next_applications", appObj);
+      renderApplicationsList();
+      alert(`Mensagem automática enviada para ${appObj.userName}! Acesse a aba "Mensagens" para aguardar a resposta.`);
+    }
   });
 
   const logoutBtn = document.querySelector("#logoutBtn");

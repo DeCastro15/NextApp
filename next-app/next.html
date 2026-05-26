@@ -302,7 +302,6 @@
               </label>
 
               <div id="qGroup1" style="display: grid; gap: 8px;">
-                <label>
                   Por que você quer servir?
                   <textarea id="appReason" rows="4" placeholder="Escreva o motivo pelo qual deseja entrar para a equipe..." required></textarea>
                 </label>
@@ -312,7 +311,7 @@
                 <div style="display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--line); padding: 14px; border-radius: 8px; background: var(--surface);">
                   <span style="font-weight: 800;">Você já se batizou nas águas?</span>
                   <button type="button" id="switchBaptized" class="theme-switch" role="switch" aria-checked="false">
-                    <span class="theme-slider"></span>
+                    <span class="theme-knob"></span>
                   </button>
                 </div>
               </div>
@@ -321,7 +320,7 @@
                 <div style="display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--line); padding: 14px; border-radius: 8px; background: var(--surface);">
                   <span style="font-weight: 800;">Já concluiu o fundamentos da fé?</span>
                   <button type="button" id="switchFundamentals" class="theme-switch" role="switch" aria-checked="false">
-                    <span class="theme-slider"></span>
+                    <span class="theme-knob"></span>
                   </button>
                 </div>
               </div>
@@ -613,7 +612,12 @@
               <p class="form-message" id="servoMessage" role="status"></p>
             </form>
 
-            <article class="panel-form">
+            <article class="panel-form" style="grid-column: 1 / -1;">
+              <h3>Novas Inscrições (Quero Servir)</h3>
+              <div class="admin-list" id="applicationsAdminList"></div>
+            </article>
+
+            <article class="panel-form" style="grid-column: 1 / -1;">
               <h3>Pedidos de oração</h3>
               <div class="admin-list" id="prayerAdminList"></div>
             </article>
