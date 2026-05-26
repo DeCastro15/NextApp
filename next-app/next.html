@@ -36,17 +36,26 @@
           <button class="nav-item" type="button" data-target="oracao">
             Oração
           </button>
+          <button class="nav-item" type="button" data-target="servir">
+            Servir
+          </button>
           <button class="nav-item" type="button" data-target="conversa">
             Conversar
           </button>
           <button class="nav-item" type="button" data-target="mensagens">
             Mensagens
           </button>
+          <button class="nav-item" type="button" data-target="escalas">
+            Escalas
+          </button>
           <button class="nav-item" type="button" data-target="gestao">
             Gestão
           </button>
           <button class="nav-item locked hidden" type="button" data-target="servos" aria-hidden="true">
             Servos
+          </button>
+          <button class="nav-item locked hidden" type="button" data-target="grupos" aria-hidden="true">
+            Equipes
           </button>
           <button class="nav-item" type="button" data-target="configuracoes">
             Configurações
@@ -266,6 +275,114 @@
           </div>
         </section>
 
+        <section class="view" id="servir" data-title="Quero Servir">
+          <div class="form-layout">
+            <div class="form-intro">
+              <p class="eyebrow">Voluntariado</p>
+              <h2>Faça parte de uma equipe</h2>
+              <p>Escolha a área com a qual você mais se identifica e preencha sua inscrição.</p>
+            </div>
+            <form class="panel-form" id="applicationForm">
+              <label>
+                Escolha a Área desejada
+                <select id="appDept" required>
+                  <option value="Servo">Servos (Organização e Apoio)</option>
+                  <option value="Midia">Mídia e Comunicação</option>
+                  <option value="Intercessao">Intercessão</option>
+                </select>
+              </label>
+
+              <div id="qGroup1" style="display: grid; gap: 8px;">
+                <label>
+                  Por que você quer servir?
+                  <textarea id="appReason" rows="4" placeholder="Escreva o motivo pelo qual deseja entrar para a equipe..." required></textarea>
+                </label>
+              </div>
+
+              <div id="qGroup2" style="display: none; gap: 14px; margin-top: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--line); padding: 14px; border-radius: 8px; background: var(--surface);">
+                  <span style="font-weight: 800;">Você já se batizou nas águas?</span>
+                  <button type="button" id="switchBaptized" class="theme-switch" role="switch" aria-checked="false">
+                    <span class="theme-slider"></span>
+                  </button>
+                </div>
+              </div>
+
+              <div id="qGroup3" style="display: none; gap: 14px; margin-top: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--line); padding: 14px; border-radius: 8px; background: var(--surface);">
+                  <span style="font-weight: 800;">Já concluiu o fundamentos da fé?</span>
+                  <button type="button" id="switchFundamentals" class="theme-switch" role="switch" aria-checked="false">
+                    <span class="theme-slider"></span>
+                  </button>
+                </div>
+              </div>
+
+              <button class="primary-button" type="submit" id="submitApplicationBtn" style="display: none; margin-top: 14px; width: 100%;">Enviar Formulário de Inscrição</button>
+              <p class="form-message" id="appMessage" role="status"></p>
+            </form>
+          </div>
+        </section>
+
+        <section class="view" id="escalas" data-title="Montar Escalas">
+          <div class="form-layout" style="grid-template-columns: 1fr;">
+            <div class="panel-form">
+              <h3>Criar Nova Escala Mensal</h3>
+              <div class="field-grid">
+                <label>
+                  Selecione o Culto / Evento
+                  <select id="scaleEventSelect" required></select>
+                </label>
+                <label>
+                  Departamento da Escala
+                  <select id="scaleDeptSelect" required>
+                    <option value="Servo">Servos</option>
+                    <option value="Midia">Mídia</option>
+                    <option value="Intercessao">Intercessão</option>
+                  </select>
+                </label>
+              </div>
+
+              <div id="dynamicFunctionsContainer" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 14px;">
+                </div>
+
+              <button class="primary-button" type="button" id="saveScaleBtn" style="margin-top: 20px;">Publicar Escala Oficial</button>
+              <p class="form-message" id="scaleMessage" role="status"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="grupos" data-title="Grupos das Equipes">
+          <div class="chat-layout">
+            <aside class="leader-panel">
+              <p class="eyebrow">Comunicação</p>
+              <h2>Seus Grupos</h2>
+              <div class="leader-list" id="groupList"></div>
+            </aside>
+
+            <div class="chat-panel">
+              <div class="chat-head" style="flex-direction: column; align-items: stretch; gap: 10px;">
+                <div>
+                  <p class="eyebrow">Chat da Equipe</p>
+                  <h2 id="groupChatTitle">Geral (Todos)</h2>
+                </div>
+                
+                <div id="pinnedMessageBanner" style="display: none; background: rgba(47, 115, 248, 0.1); border: 1px solid var(--blue); padding: 12px 14px; border-radius: 8px; position: relative;">
+                  <strong style="color: var(--blue); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">📌 Aviso da Liderança</strong>
+                  <p id="pinnedMessageText" style="margin: 4px 0 0; font-size: 0.95rem; font-weight: 700; color: var(--ink);"></p>
+                </div>
+              </div>
+
+              <div class="chat-window" id="groupChatWindow">
+                </div>
+              
+              <form class="chat-form" id="groupChatForm">
+                <input type="text" id="groupChatInput" placeholder="Enviar mensagem para o grupo..." required />
+                <button class="primary-button compact" type="submit">Enviar</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
         <section class="view" id="conversa" data-title="Conversar">
           <div class="chat-layout">
             <aside class="leader-panel">
@@ -331,25 +448,38 @@
           </div>
         </section>
 
-        <section class="view" id="servos" data-title="Servos">
+        <section class="view" id="servos" data-title="Área dos Servos">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Equipe</p>
-              <h2>Área dos Servos</h2>
+              <p class="eyebrow">Minhas Escalas</p>
+              <h2>Onde você está designado</h2>
             </div>
           </div>
-          <div class="servant-grid">
-            <article class="servant-card">
-              <span>Escala</span>
-              <strong>Recepção - Sábado 19h</strong>
+          <div class="feed-list" id="myActiveScales" style="margin-bottom: 28px;">
+            </div>
+
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Treinamento</p>
+              <h2>O que cada função faz (Setor Servos)</h2>
+            </div>
+          </div>
+          <div class="feed-list" style="display: grid; gap: 10px;">
+            <article class="feed-card" style="grid-template-columns: 1fr; background: var(--surface);">
+              <strong>Porta & Recepção</strong>
+              <p style="margin: 4px 0 0; font-size: 0.9rem;">Receber a todos na entrada com alegria e sorriso, garantindo acolhimento e a entrega correta dos materiais de apoio.</p>
             </article>
-            <article class="servant-card">
-              <span>Tarefa</span>
-              <strong>Chegar 30 min antes</strong>
+            <article class="feed-card" style="grid-template-columns: 1fr; background: var(--surface);">
+              <strong>Integração</strong>
+              <p style="margin: 4px 0 0; font-size: 0.9rem;">Direcionar os novos convertidos e visitantes ao final do culto para a sala de acolhimento e coletar dados de contato.</p>
             </article>
-            <article class="servant-card">
-              <span>Aviso interno</span>
-              <strong>Reunião rápida após o culto</strong>
+            <article class="feed-card" style="grid-template-columns: 1fr; background: var(--surface);">
+              <strong>Manutenção & Suporte</strong>
+              <p style="margin: 4px 0 0; font-size: 0.9rem;">Verificar a climatização, alinhamento das cadeiras antes do culto e dar auxílio em necessidades estruturais durante as reuniões.</p>
+            </article>
+            <article class="feed-card" style="grid-template-columns: 1fr; background: var(--surface);">
+              <strong>Coordenador & Sub Coordenador</strong>
+              <p style="margin: 4px 0 0; font-size: 0.9rem;">Liderar a equipe de apoio no dia do culto, conferir faltas, realizar a oração pré-culto e organizar o ofertório.</p>
             </article>
           </div>
         </section>
@@ -448,12 +578,27 @@
             </form>
 
             <form class="panel-form" id="servoForm">
-              <h3>Liberar área Servos</h3>
+              <h3>Liberar e Atualizar Servos</h3>
               <label>
                 Jovem
                 <select id="servoUser"></select>
               </label>
-              <button class="primary-button" type="submit">Dar cargo de Servo</button>
+              <label>Áreas de Atuação</label>
+              <div class="choice-row" style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 10px;">
+                <label class="toggle-row" style="flex: 1; min-width: 110px;">
+                  <input type="checkbox" class="servo-dept-check" value="Servo" checked disabled />
+                  <span>Servo</span>
+                </label>
+                <label class="toggle-row" style="flex: 1; min-width: 110px;">
+                  <input type="checkbox" class="servo-dept-check" value="Midia" />
+                  <span>Mídia</span>
+                </label>
+                <label class="toggle-row" style="flex: 1; min-width: 110px;">
+                  <input type="checkbox" class="servo-dept-check" value="Intercessao" />
+                  <span>Intercessão</span>
+                </label>
+              </div>
+              <button class="primary-button" type="submit">Salvar Atualização</button>
               <p class="form-message" id="servoMessage" role="status"></p>
             </form>
 

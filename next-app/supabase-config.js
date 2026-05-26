@@ -17,7 +17,7 @@ const SUPABASE_CONFIG = {
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzcWRzZnJ4eHlnaXlkbm9lb2pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzQ1MTcsImV4cCI6MjA5NTE1MDUxN30.vsXLMKQpI0lD-hkN-ohXVHAdxOzvFmkd_yjVsH7n4p4',
 };
 
-const USE_MOCK_DB = true; // Mude para false só quando o banco estiver pronto
+const USE_MOCK_DB = false; // Mude para false só quando o banco estiver pronto
 
 // ---------------------------------------------------------------------------
 // NextAuth — autenticação (mock ou Supabase)
@@ -162,6 +162,92 @@ const NextAuth = (() => {
       initials: 'AC',
       childName: 'João Victor',
     },
+    {
+      id: 'usr_12',
+      name: 'Ana Ruth',
+      email: 'ana.ruth@next.com',
+      password: 'next2025',
+      role: 'sublider',
+      initials: 'AR',
+    },
+    // --- NOVOS JOVENS ESCALADOS ---
+    {
+      id: 'usr_13',
+      name: 'Lucas Almeida',
+      email: 'lucas@next.com',
+      password: 'next2025',
+      role: 'jovem',
+      initials: 'LA',
+      hasServo: true,
+      servoType: ["Servo"],
+      age: 15,
+    },
+    {
+      id: 'usr_14',
+      name: 'Camila Oliveira',
+      email: 'camila@next.com',
+      password: 'next2025',
+      role: 'jovem',
+      initials: 'CO',
+      hasServo: true,
+      servoType: ["Servo", "Midia"],
+      age: 17,
+    },
+    {
+      id: 'usr_15',
+      name: 'Samuel Ribeiro',
+      email: 'samuel@next.com',
+      password: 'next2025',
+      role: 'jovem',
+      initials: 'SR',
+      hasServo: true,
+      servoType: ["Servo", "Intercessao"],
+      age: 14,
+    },
+    {
+      id: 'usr_16',
+      name: 'Felipe Costa',
+      email: 'felipe@next.com',
+      password: 'next2025',
+      role: 'jovem',
+      initials: 'FC',
+      hasServo: true,
+      servoType: ["Servo", "Midia"],
+      age: 15,
+    },
+    {
+      id: 'usr_17',
+      name: 'Amanda Lima',
+      email: 'amanda@next.com',
+      password: 'next2025',
+      role: 'jovem',
+      initials: 'AL',
+      hasServo: true,
+      servoType: ["Servo", "Intercessao"],
+      age: 14,
+    },
+    {
+      id: 'usr_18',
+      name: 'Gabriel Mendes',
+      email: 'gabriel@next.com',
+      password: 'next2025',
+      role: 'jovem',
+      initials: 'GM',
+      hasServo: true,
+      servoType: ["Servo", "Midia", "Intercessao"],
+      age: 17,
+    },
+    {
+      id: 'usr_19',
+      name: 'Letícia Souza (Mídia e Intercessão)',
+      email: 'leticia@next.com',
+      password: 'next2025',
+      role: 'jovem',
+      initials: 'LS',
+      hasServo: true,
+      servoType: ["Servo", "Midia", "Intercessao"],
+      age: 16,
+    }
   ];
 
   async function login(email, password) {
@@ -310,7 +396,7 @@ const NextDB = (() => {
   // 3. Puxa os dados atualizados com garantia de reescrita
   async function syncFromCloud() {
     if (!supabaseClient) return;
-    const tables = ['next_messages', 'next_prayers'];
+    const tables = ['next_messages', 'next_prayers', 'next_group_messages'];
     
     for (const table of tables) {
       const { data, error } = await supabaseClient.from(table).select('*');

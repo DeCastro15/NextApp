@@ -11,6 +11,7 @@ const roleLabels = {
   jovem: "Jovem",
   responsavel: "Responsável",
   lider: "Líder",
+  sublider: "Sublíder",
   pastor: "Pastor",
   missionaria: "Missionária",
   admin: "Administrador",
@@ -31,9 +32,16 @@ const permissionsByRole = {
   jovem: ["home", "agenda", "conteudo", "loja", "oracao", "conversa", "configuracoes"],
   responsavel: ["home", "agenda", "culto", "configuracoes"],
   lider: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "configuracoes"],
+  sublider: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "escalas", "gestao", "configuracoes"],
   pastor: ["home", "agenda", "culto", "conteudo", "loja", "oracao", "conversa", "mensagens", "gestao", "configuracoes", "servos"],
   missionaria: ["home", "agenda", "culto", "conteudo", "loja", "oracao", "conversa", "mensagens", "gestao", "configuracoes", "servos"],
   admin: ["home", "agenda", "culto", "conteudo", "loja", "gestao", "configuracoes", "servos"],
+};
+
+const functionsMap = {
+  Servo: ["Porta", "Recepção", "Integração", "Manutenção", "Suporte", "Ofertório", "Sub Coordenação", "Coordenação"],
+  Midia: ["Fotografia", "Story"],
+  Intercessao: ["Intercessor(a) 1", "Intercessor(a) 2", "Intercessor(a) 3", "Intercessor(a) 4", "Intercessor(a) 5", "Intercessor(a) 6", "Intercessor(a) 7", "Intercessor(a) 8", "Intercessor(a) 9", "Intercessor(a) 10", "Coordenação"],
 };
 
 const defaultPosts = [
@@ -126,7 +134,11 @@ let currentAgendaFilter = 'todos';
 let selectedThreadId = "";
 
 function canManage() {
-  return ["pastor", "missionaria", "lider", "admin"].includes(currentUser.role);
+  return ["pastor", "missionaria", "lider", "sublider", "admin"].includes(currentUser.role);
+}
+
+function canSeeServantStatus() {
+  return ["pastor", "missionaria", "lider", "sublider", "admin"].includes(currentUser.role);
 }
 
 function canManageAll() {
@@ -136,6 +148,11 @@ function canManageAll() {
 function allowedViews() {
   const base = [...(permissionsByRole[currentUser.role] || permissionsByRole.jovem)];
   if (currentUser.hasServo && !base.includes("servos")) base.push("servos");
+  // Libera a aba de Equipes/Grupos para qualquer servo
+  if (currentUser.hasServo && !base.includes("grupos")) base.push("grupos"); 
+  
+  // Garante que liderança também tenha acesso direto
+  if (canManage() && !base.includes("grupos")) base.push("grupos");
   return base;
 }
 
@@ -221,6 +238,19 @@ function formatAudience(audience) {
   return labels[audience] || audience || "Geral";
 }
 
+function formatServoType(types) {
+  if (!types || !types.length) return "Servo";
+  const hasServo = types.includes("Servo");
+  const hasMidia = types.includes("Midia");
+  const hasInt = types.includes("Intercessao");
+
+  if (hasServo && hasMidia && hasInt) return "Geral";
+  if (hasServo && hasMidia) return "Servo e Mídia";
+  if (hasServo && hasInt) return "Servo e Intercessão";
+  if (hasMidia && hasInt) return "Mídia e Intercessão"; 
+  return types.join(", ");
+}
+
 function audienceAllowed(audience) {
   const value = audience || "geral";
   if (canManageAll() || currentUser.role === "lider") return true;
@@ -279,6 +309,13 @@ function setView(target) {
   if (target === "mensagens") renderLeaderInbox();
   if (target === "gestao") renderAdminLists();
   if (target === "culto") renderCultStatus();
+  if (target === "escalas") {
+    populateScaleEvents();
+    renderDynamicScaleFields();
+  }
+  if (target === "servos") {
+    renderMyScales();
+  }
 }
 
 function setupSessionUi() {
@@ -671,6 +708,171 @@ function renderYoungChat() {
     : `<div class="chat-bubble system">Inicie a conversa enviando uma mensagem.</div>`;
 }
 
+// --- LÓGICA DE GRUPOS DE EQUIPE ---
+let currentGroupId = "Geral";
+const groupNames = {
+  "Geral": "Geral (Todos os Servos)",
+  "Servo": "Equipe de Apoio (Servos)",
+  "Midia": "Equipe de Mídia",
+  "Intercessao": "Equipe de Intercessão"
+};
+
+function renderGroupList() {
+  const listEl = document.querySelector("#groupList");
+  if (!listEl) return;
+
+  const today = new Date().getDate();
+  const cultStatus = getValue("next_cult_status", "inativo");
+  const allScales = getAll("next_scales", []);
+  const events = getEvents();
+
+  let myGroups = [];
+  let isAnyEventValid = false;
+
+  // Filtra os eventos que estão dentro da janela de 7 dias antes e não foram finalizados
+  const upcomingEvents = events.filter(e => {
+    let diff = Number(e.date) - today;
+    if (diff < 0) diff += 30; // Tratamento básico para virada de mês
+    
+    // Se for hoje e o culto já acabou, a sala fecha
+    if (diff === 0 && cultStatus === "Finalizado") return false;
+    
+    // O evento acontece nos próximos 7 dias (incluindo hoje)?
+    return diff >= 0 && diff <= 7;
+  });
+
+  if (upcomingEvents.length > 0) {
+    if (canManage()) {
+      // Liderança vê tudo sempre que tem um evento na janela de 1 semana
+      myGroups = ["Geral", "Servo", "Midia", "Intercessao"];
+      isAnyEventValid = true;
+    } else {
+      // Jovens veem se estiverem escalados para algum desses eventos próximos
+      const myUpcomingScales = allScales.filter(scale => {
+        const isUpcoming = upcomingEvents.some(e => e.id === scale.eventId);
+        const isAssigned = scale.assignments.some(a => a.userId === currentUser.id);
+        return isUpcoming && isAssigned;
+      });
+
+      if (myUpcomingScales.length > 0) {
+        myGroups = ["Geral"];
+        myUpcomingScales.forEach(scale => {
+          if (!myGroups.includes(scale.dept)) myGroups.push(scale.dept);
+        });
+        isAnyEventValid = true;
+      }
+    }
+  }
+
+  const formInput = document.querySelector("#groupChatInput");
+  const submitBtn = document.querySelector("#groupChatForm button");
+
+  // Bloqueio visual se não tiver acesso (Longe do culto, finalizado ou não escalado)
+  if (!isAnyEventValid || myGroups.length === 0) {
+     listEl.innerHTML = `<p class="safety-note" style="margin-top: 0;">Nenhum grupo ativo. Os chats abrem 1 semana antes do culto exclusivamente para a equipe escalada e somem após o encerramento.</p>`;
+     if (formInput) formInput.disabled = true;
+     if (submitBtn) submitBtn.disabled = true;
+     currentGroupId = null;
+     renderGroupChat(); 
+     return;
+  }
+
+  // Mantém no grupo válido
+  if (!myGroups.includes(currentGroupId)) {
+     currentGroupId = myGroups[0];
+  }
+
+  if (formInput) formInput.disabled = false;
+  if (submitBtn) submitBtn.disabled = false;
+
+  listEl.innerHTML = myGroups.map(groupId => {
+    const active = groupId === currentGroupId ? "active" : "";
+    return `
+      <button class="leader-item ${active}" type="button" data-group-target="${groupId}">
+        <span class="leader-avatar" style="background: var(--blue);">#</span>
+        <span class="leader-label"><strong>${groupNames[groupId]}</strong></span>
+      </button>
+    `;
+  }).join("");
+}
+
+function renderGroupChat() {
+  const windowEl = document.querySelector("#groupChatWindow");
+  const banner = document.querySelector("#pinnedMessageBanner");
+  const titleEl = document.querySelector("#groupChatTitle");
+  
+  if (!windowEl) return;
+
+  // Se o usuário não tiver acesso a nada no momento
+  if (!currentGroupId) {
+     windowEl.innerHTML = `<div class="chat-bubble system">Chat encerrado ou indisponível. Ele abre 1 semana antes do culto para quem está escalado.</div>`;
+     if (banner) banner.style.display = "none";
+     if (titleEl) titleEl.textContent = "Equipe Offline";
+     return;
+  }
+
+  if (titleEl) titleEl.textContent = groupNames[currentGroupId];
+
+  const allMsgs = getAll("next_group_messages", []).filter(m => m.groupId === currentGroupId);
+  const orderedMsgs = allMsgs.sort((a, b) => a.createdAt - b.createdAt);
+  
+  const pinnedMsgs = orderedMsgs.filter(m => m.isPinned);
+  const latestPinned = pinnedMsgs.length > 0 ? pinnedMsgs[pinnedMsgs.length - 1] : null;
+  
+  const bannerText = document.querySelector("#pinnedMessageText");
+  
+  if (latestPinned && banner && bannerText) {
+    banner.style.display = "block";
+    bannerText.textContent = `${latestPinned.senderName}: "${latestPinned.text}"`;
+  } else if (banner) {
+    banner.style.display = "none";
+  }
+
+  const isLeader = canManage();
+
+  windowEl.innerHTML = orderedMsgs.length ? orderedMsgs.map(msg => {
+    const isMine = msg.senderId === currentUser.id;
+    const pinBtn = isLeader ? `<span data-pin-msg="${msg.id}" style="cursor:pointer; font-size: 0.8rem; margin-left: 8px; opacity: 0.6;" title="Fixar/Desfixar Aviso">📌</span>` : '';
+    
+    return `
+      <div class="chat-bubble ${isMine ? "young" : "leader"}" style="${msg.isPinned ? 'border: 2px solid var(--blue);' : ''}">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+          <strong>${isMine ? "Você" : msg.senderName} <span style="font-size:0.7rem; opacity:0.7; font-weight:normal;">(${roleLabels[msg.senderRole] || 'Servo'})</span></strong>
+          ${pinBtn}
+        </div>
+        ${msg.text}
+      </div>
+    `;
+  }).join("") : `<div class="chat-bubble system">Nenhuma mensagem neste grupo ainda. Mande um aviso!</div>`;
+}
+
+function saveGroupMessage(text) {
+  if (!text) return;
+  saveItem("next_group_messages", {
+    id: `gmsg_${Date.now()}`,
+    groupId: currentGroupId,
+    senderId: currentUser.id,
+    senderName: currentUser.name,
+    senderRole: currentUser.role,
+    text: text,
+    isPinned: false,
+    createdAt: Date.now()
+  });
+}
+
+function togglePinMessage(msgId) {
+  const msgs = getAll("next_group_messages", []);
+  const msg = msgs.find(m => m.id === msgId);
+  if (!msg) return;
+  
+  // Desfixa todas as outras do mesmo grupo e inverte o status dessa
+  msgs.forEach(m => { if (m.groupId === msg.groupId) m.isPinned = false; });
+  msg.isPinned = !msg.isPinned;
+  
+  saveItem("next_group_messages", msg);
+  renderGroupChat();
+}
+
 function saveYoungMessage(text) {
   if (!chatTargetName || !chatTargetId) return;
 
@@ -967,10 +1169,34 @@ function renderEventAudienceOptions() {
 }
 
 function renderServoOptions() {
+  if (!canSeeServantStatus()) return;
   const jovens = getUsers().filter((user) => user.role === "jovem");
-  document.querySelector("#servoUser").innerHTML = jovens
-    .map((user) => `<option value="${user.id}">${user.name}${user.hasServo ? " - Servo" : ""}</option>`)
+  const selectEl = document.querySelector("#servoUser");
+  if (!selectEl) return;
+  selectEl.innerHTML = jovens
+    .map((user) => {
+       const typeStr = user.hasServo ? ` - Ativo (${formatServoType(user.servoType)})` : "";
+       return `<option value="${user.id}">${user.name}${typeStr}</option>`;
+    })
     .join("");
+}
+
+function giveServoRole(event) {
+  event.preventDefault();
+  const userId = document.querySelector("#servoUser").value;
+  const user = getUsers().find((item) => item.id === userId);
+  if (!user) return;
+
+  // Pega os setores marcados (garantindo que "Servo" sempre vá)
+  const checks = Array.from(document.querySelectorAll(".servo-dept-check"));
+  const types = [];
+  checks.forEach(c => {
+    if (c.checked || c.value === "Servo") types.push(c.value);
+  });
+
+  saveItem("next_users", { ...user, hasServo: true, servoType: types });
+  document.querySelector("#servoMessage").textContent = `${user.name} atualizado como ${formatServoType(types)}.`;
+  renderServoOptions();
 }
 
 function renderPrayerAdminList() {
@@ -1064,17 +1290,6 @@ function saveProduct(event) {
   renderShop();
 }
 
-function giveServoRole(event) {
-  event.preventDefault();
-  const userId = document.querySelector("#servoUser").value;
-  const user = getUsers().find((item) => item.id === userId);
-  if (!user) return;
-
-  saveItem("next_users", { ...user, hasServo: true });
-  document.querySelector("#servoMessage").textContent = `${user.name} agora tem acesso a Servos.`;
-  renderServoOptions();
-}
-
 function savePrayer(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -1096,6 +1311,89 @@ function savePrayer(event) {
   renderPrayerAdminList();
 }
 
+function populateScaleEvents() {
+  const selectEl = document.querySelector("#scaleEventSelect");
+  if (!selectEl) return;
+  selectEl.innerHTML = getEvents().map(e => `<option value="${e.id}">${e.title} - Dia ${e.date}</option>`).join("");
+}
+
+function renderDynamicScaleFields() {
+  const dept = document.querySelector("#scaleDeptSelect").value;
+  const eventId = document.querySelector("#scaleEventSelect").value;
+  const container = document.querySelector("#dynamicFunctionsContainer");
+  if (!container) return;
+
+  const funcs = functionsMap[dept] || [];
+  
+  // Encontra quem tem o setor atual incluso no perfil
+  const eligibleServants = getUsers().filter(u => u.hasServo && u.servoType && u.servoType.includes(dept));
+
+  // CHECAGEM DE CONFLITO: Quem já foi escalado para ESTE evento em QUALQUER setor?
+  const allScales = getAll("next_scales", []);
+  const scalesForThisEvent = allScales.filter(s => s.eventId === eventId);
+  const alreadyScheduledIds = new Set();
+  scalesForThisEvent.forEach(scale => {
+     scale.assignments.forEach(a => alreadyScheduledIds.add(a.userId));
+  });
+
+  container.innerHTML = funcs.map(f => {
+    const selectOptions = `<option value="">-- Selecione o Voluntário --</option>` + 
+      eligibleServants.map(s => {
+        const isScheduled = alreadyScheduledIds.has(s.id);
+        const disabledAttr = isScheduled ? "disabled" : "";
+        const labelSuffix = isScheduled ? " (Já escalado no culto)" : "";
+        return `<option value="${s.id}" ${disabledAttr}>${s.name}${labelSuffix}</option>`;
+      }).join("");
+
+    return `
+      <label style="display: flex; flex-direction: column; gap: 4px;">
+        Função: <strong>${f}</strong>
+        <select class="scale-func-assign" data-func="${f}">
+          ${selectOptions}
+        </select>
+      </label>
+    `;
+  }).join("");
+}
+
+function renderMyScales() {
+  const container = document.querySelector("#myActiveScales");
+  if (!container) return;
+
+  const scales = getAll("next_scales", []);
+  const events = getEvents();
+  const isLeader = ["lider", "sublider", "pastor", "missionaria", "admin"].includes(currentUser.role);
+  
+  let visibleScales = scales;
+  if (!isLeader) {
+    // Isola a visualização: O jovem só vê as escalas dos setores que ele faz parte
+    const myDepts = currentUser.servoType || ["Servo"];
+    visibleScales = scales.filter(scale => myDepts.includes(scale.dept));
+  }
+
+  const htmlContent = visibleScales.map(scale => {
+    const ev = events.find(e => e.id === scale.eventId);
+    if (!ev) return "";
+
+    const userAssignment = scale.assignments.find(a => a.userId === currentUser.id);
+    if (isLeader || userAssignment) {
+      return `
+        <article class="feed-card" style="grid-template-columns: 1fr; gap: 10px; background: var(--surface);">
+          <span class="feed-tag" style="background: var(--blue); color: #fff; width: fit-content; padding: 2px 8px;">Equipe ${scale.dept}</span>
+          <h3 style="margin: 4px 0;">${ev.title} — Dia ${ev.date} às ${ev.time}</h3>
+          <p style="margin: 0; font-size: 0.95rem;">Sua Atribuição: <strong style="color: #10b981;">${userAssignment ? userAssignment.functionName : "Coordenador Geral"}</strong></p>
+          <div style="font-size: 0.85rem; padding-top: 8px; border-top: 1px dashed var(--line); margin-top: 4px; color: var(--muted);">
+            ${scale.assignments.map(a => `· <strong>${a.functionName}:</strong> ${a.userName}`).join("<br>")}
+          </div>
+        </article>
+      `;
+    }
+    return "";
+  }).join("");
+
+  container.innerHTML = htmlContent || `<p class="safety-note">Nenhuma designação oficial encontrada para o seu perfil neste mês.</p>`;
+}
+
 function bindEvents() {
   navButtons.forEach((button) => button.addEventListener("click", () => setView(button.dataset.target)));
 
@@ -1107,6 +1405,126 @@ function bindEvents() {
       document.querySelectorAll("[data-content-tab]").forEach((button) => button.classList.toggle("active", button === tab));
       document.querySelectorAll(".content-grid").forEach((grid) => grid.classList.toggle("active", grid.id === tab.dataset.contentTab));
     });
+  });
+
+  // Trocar de Grupo
+  document.querySelector("#groupList")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-group-target]");
+    if (!btn) return;
+    currentGroupId = btn.dataset.groupTarget;
+    renderGroupList();
+    renderGroupChat();
+  });
+
+  // Enviar Mensagem no Grupo
+  document.querySelector("#groupChatForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.querySelector("#groupChatInput");
+    saveGroupMessage(input.value.trim());
+    input.value = "";
+    renderGroupChat();
+  });
+
+  // Fixar Aviso (Apenas Liderança)
+  document.querySelector("#groupChatWindow")?.addEventListener("click", (e) => {
+    const pinBtn = e.target.closest("[data-pin-msg]");
+    if (!pinBtn || !canManage()) return;
+    togglePinMessage(pinBtn.dataset.pinMsg);
+  });
+
+  // --- OUVIDORES DE EVENTO DE ESCALAS E INSCRIÇÃO DINÂMICA ---
+  
+  // Troca de campos ao mudar o ministério na criação da escala
+  document.querySelector("#scaleDeptSelect")?.addEventListener("change", renderDynamicScaleFields);
+  document.querySelector("#scaleEventSelect")?.addEventListener("change", renderDynamicScaleFields);
+  // Processo de publicação de escalas
+  document.querySelector("#saveScaleBtn")?.addEventListener("click", () => {
+    const eventId = document.querySelector("#scaleEventSelect").value;
+    const dept = document.querySelector("#scaleDeptSelect").value;
+    const selects = document.querySelectorAll(".scale-func-assign");
+    
+    const assignments = [];
+    selects.forEach(sel => {
+      if (sel.value) {
+        const servantUser = getUsers().find(u => u.id === sel.value);
+        assignments.push({
+          functionName: sel.dataset.func,
+          userId: sel.value,
+          userName: servantUser ? servantUser.name : "Servo"
+        });
+      }
+    });
+
+    if (!eventId) {
+      document.querySelector("#scaleMessage").textContent = "Erro: Selecione um evento ativo.";
+      return;
+    }
+
+    saveItem("next_scales", {
+      id: `scale_${Date.now()}`,
+      eventId,
+      dept,
+      assignments,
+      createdAt: Date.now()
+    });
+
+    document.querySelector("#scaleMessage").textContent = "A escala oficial foi publicada com sucesso!";
+    renderMyScales();
+  });
+
+  // Fluxo Dinâmico Passo a Passo do Formulário "Quero Servir"
+  const appReason = document.querySelector("#appReason");
+  const qGroup2 = document.querySelector("#qGroup2");
+  const qGroup3 = document.querySelector("#qGroup3");
+  const switchBap = document.querySelector("#switchBaptized");
+  const switchFund = document.querySelector("#switchFundamentals");
+  const submitAppBtn = document.querySelector("#submitApplicationBtn");
+
+  appReason?.addEventListener("input", () => {
+    if (appReason.value.trim().length > 8) {
+      qGroup2.style.display = "block";
+    } else {
+      qGroup2.style.display = "none";
+      qGroup3.style.display = "none";
+      submitAppBtn.style.display = "none";
+    }
+  });
+
+  switchBap?.addEventListener("click", () => {
+    const isChecked = switchBap.getAttribute("aria-checked") === "true";
+    switchBap.setAttribute("aria-checked", !isChecked ? "true" : "false");
+    qGroup3.style.display = "block";
+  });
+
+  switchFund?.addEventListener("click", () => {
+    const isChecked = switchFund.getAttribute("aria-checked") === "true";
+    switchFund.setAttribute("aria-checked", !isChecked ? "true" : "false");
+    submitAppBtn.style.display = "block";
+  });
+
+  // Envio seguro injetando Nome e Idade de forma invisível
+  document.querySelector("#applicationForm")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    
+    saveItem("next_applications", {
+      id: `app_${Date.now()}`,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userAge: currentUser.age || "Não especificada",
+      dept: document.querySelector("#appDept").value,
+      reason: appReason.value.trim(),
+      isBaptized: switchBap.getAttribute("aria-checked") === "true" ? "Sim" : "Não",
+      hasFundamentals: switchFund.getAttribute("aria-checked") === "true" ? "Sim" : "Não",
+      createdAt: Date.now()
+    });
+
+    document.querySelector("#appMessage").textContent = "Sua inscrição foi recebida com sucesso pela liderança!";
+    e.target.reset();
+    switchBap.setAttribute("aria-checked", "false");
+    switchFund.setAttribute("aria-checked", "false");
+    qGroup2.style.display = "none";
+    qGroup3.style.display = "none";
+    submitAppBtn.style.display = "none";
   });
 
   // Ouvinte para Sair da Conta
@@ -1389,6 +1807,14 @@ async function boot() {
   setupPermissions();
   bindEvents();
   
+  // Logo abaixo dos outros "renders" no topo do boot():
+  renderGroupList();
+  renderGroupChat();
+  // E lá no setInterval (o atualizador de 3 em 3 segundos) adicione:
+  if (document.querySelector("#grupos").classList.contains("active")) {
+    renderGroupChat();
+  }
+
   // Renderiza tudo na hora com o que já tem salvo no celular (Super Rápido)
   renderFeed();
   renderCalendar();
@@ -1399,6 +1825,7 @@ async function boot() {
   renderChatContacts();
   renderYoungChat();
   renderLeaderInbox();
+  renderMyScales();
   if (typeof renderAgendaFilterOptions === 'function') renderAgendaFilterOptions();
   if (typeof renderAdminLists === 'function') renderAdminLists();
   fillProfileForm(getProfileFromStorage());

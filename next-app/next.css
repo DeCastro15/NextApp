@@ -790,6 +790,14 @@ button {
   font-weight: 900;
 }
 
+/* Acoplamento visual dos seletores de Switch de sim/não no formulário */
+.panel-form .theme-switch[aria-checked="true"] .theme-slider {
+  background-color: #00a870;
+}
+.panel-form .theme-switch[aria-checked="true"] .theme-slider::before {
+  transform: translateX(24px);
+}
+
 textarea,
 input[type="text"],
 input[type="number"],
