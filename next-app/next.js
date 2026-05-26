@@ -1079,6 +1079,10 @@ function applyProfile(profile) {
   const age = profile.age ? `${profile.age} anos` : "13 a 17 anos";
   const role = profile.role || roleLabels[currentUser.role] || "Membro Next";
   const shortName = getProfileInitials(name);
+  // Se não há foto salva mas o usuário é líder com foto mapeada, usa a foto do mapa
+  const mappedPhoto = leaderPhotos[currentUser.name] || 
+    leaderPhotos[leaderNames.find(n => currentUser.name?.toLowerCase().includes(n.toLowerCase()))];
+  const effectivePhoto = profile.photo || mappedPhoto || "";
   const settingsAvatar = document.querySelector("#settingsAvatar");
   const profilePill = document.querySelector(".profile-pill");
 
@@ -1087,9 +1091,10 @@ function applyProfile(profile) {
   settingsAvatar.textContent = shortName;
   profilePill.querySelector("span").textContent = shortName;
 
-  if (profile.photo) {
-    settingsAvatar.style.backgroundImage = `url("${profile.photo}")`;
-    profilePill.style.backgroundImage = `url("${profile.photo}")`;
+  // Troque o bloco if/else de foto por:
+  if (effectivePhoto) {
+    settingsAvatar.style.backgroundImage = `url("${effectivePhoto}")`;
+    profilePill.style.backgroundImage = `url("${effectivePhoto}")`;
     settingsAvatar.classList.add("has-photo");
     profilePill.classList.add("has-photo");
   } else {
@@ -1554,25 +1559,36 @@ function bindEvents() {
   const submitAppBtn = document.querySelector("#submitApplicationBtn");
 
   appReason?.addEventListener("input", () => {
-    if (appReason.value.trim().length > 8) {
-      qGroup2.style.display = "block";
-      qGroup3.style.display = "block";
-      submitAppBtn.style.display = "block";
-    } else {
-      qGroup2.style.display = "none";
-      qGroup3.style.display = "none";
-      submitAppBtn.style.display = "none";
-    }
+    const filled = appReason.value.trim().length > 2;
+
+    // Passo 1 → resposta preenchida: mostra pergunta do batismo
+    if (filled) { qGroup2.style.display = "grid"; qGroup2.classList.add("qgroup-visible"); }
+    else { qGroup2.style.display = "none"; qGroup2.classList.remove("qgroup-visible"); }
+
+
+    // Passo 2 → batismo respondido: mostra pergunta dos fundamentos
+    const batismoRespondido = filled && switchBap.getAttribute("aria-checked") !== "false";
+    if (batismoRespondido) { qGroup3.style.display = "grid"; qGroup3.classList.add("qgroup-visible"); }
+    else { qGroup3.style.display = "none"; qGroup3.classList.remove("qgroup-visible"); }
+
+    // Passo 3 → botão só aparece depois do batismo (fundamentos é opcional)
+    submitAppBtn.style.display = filled ? "block" : "none";
   });
 
   switchBap?.addEventListener("click", () => {
     const isChecked = switchBap.getAttribute("aria-checked") === "true";
-    switchBap.setAttribute("aria-checked", !isChecked ? "true" : "false");
+    switchBap.setAttribute("aria-checked", isChecked ? "false" : "true");
+
+    // Ao responder o batismo, revela os fundamentos da fé
+    const filled = appReason.value.trim().length > 2;
+    if (filled) { qGroup3.style.display = "grid"; qGroup3.classList.add("qgroup-visible"); }
+    else { qGroup3.style.display = "none"; qGroup3.classList.remove("qgroup-visible"); }
+    submitAppBtn.style.display = filled ? "block" : "none";
   });
 
   switchFund?.addEventListener("click", () => {
     const isChecked = switchFund.getAttribute("aria-checked") === "true";
-    switchFund.setAttribute("aria-checked", !isChecked ? "true" : "false");
+    switchFund.setAttribute("aria-checked", isChecked ? "false" : "true");
   });
 
   // 1. Envio da Inscrição pelo Jovem
