@@ -169,6 +169,8 @@ const NextAuth = (() => {
       email: 'ana.ruth@next.com', 
       password: 'next2025', 
       role: 'sublider', 
+      hasServo: true, 
+      servoType: ["Servo"],
       initials: 'AR'
     },
     {

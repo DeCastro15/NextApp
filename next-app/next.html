@@ -229,7 +229,11 @@
                 </label>
                 <label>
                   Imagem do Produto
-                  <input type="file" id="shopProductImage" accept="image/*" />
+                  <label class="file-upload-btn" for="shopProductImage">
+                    🖼️ Escolher imagem
+                  </label>
+                  <input type="file" id="shopProductImage" accept="image/*" class="file-input-hidden" />
+                  <span class="file-name-display" id="shopProductImageName">Nenhum arquivo selecionado</span>
                   <small id="shopProductImageHint" style="display: none; color: var(--blue); font-weight: 700; margin-top: 4px;">Imagem atual salva. Envie outra para trocar.</small>
                 </label>
               </div>
@@ -630,7 +634,11 @@
             <form class="panel-form settings-form" id="profileForm">
               <label>
                 Foto
-                <input type="file" id="profilePhoto" name="foto" accept="image/*" />
+                <label class="file-upload-btn" for="profilePhoto">
+                  📷 Escolher foto
+                </label>
+                <input type="file" id="profilePhoto" name="foto" accept="image/*" class="file-input-hidden" />
+                <span class="file-name-display" id="profilePhotoName">Nenhum arquivo selecionado</span>
               </label>
 
               <div class="field-grid">

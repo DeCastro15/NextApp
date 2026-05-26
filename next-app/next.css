@@ -21,6 +21,7 @@ body.dark-mode {
   --surface: #1f2937;   /* Fundo dos cartões e menus escuro */
   --soft: #111827;      /* Fundo da tela bem escuro */
   --shadow: 0 18px 60px rgba(0, 0, 0, 0.4); /* Sombra mais forte */
+  --chatLeaderName: #93c5fd; /* Cor de nome dos líderes no chat */
 }
 
 /* ---- Dark mode: fundos hardcoded que precisam adaptar ---- */
@@ -289,10 +290,11 @@ button {
   height: 46px;
   display: none;
   place-items: center;
-  gap: 4px;
+  gap: -0.25rem;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+  padding: 0.75em 0em;
 }
 
 .menu-toggle span {
@@ -1259,6 +1261,93 @@ select:focus {
   }
 }
 
+.timeline-step {
+    display: flex !important;
+    flex-direction: row-reverse !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    position: relative;
+    z-index: 2;
+    opacity: 0.5;
+    margin: 0 !important;
+    width: 100%;
+    transition: all 300ms ease;
+  }
+
+  .timeline-step .step-icon {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: 50%;
+    font-size: 1.2rem;
+    color: var(--muted);
+    transition: all 300ms ease;
+    z-index: 2; /* Garante que o ícone fique por cima da linha */
+}
+
+  .timeline-step.done {
+    opacity: 1;
+  }
+
+  .timeline-step.done .step-icon {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+  }
+
+  .timeline-step.active {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .timeline-step.active .step-icon {
+    background: #10b981; /* Verde esmeralda para indicar "Ao Vivo" */
+    border-color: #10b981;
+    color: #fff;
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0.2);
+    animation: pulseLive 2s infinite;
+  }
+
+  .timeline-step h4 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: var(--ink);
+    font-weight: 800;
+    text-align: left;
+  }
+
+  .cult-timeline {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.5em !important; 
+    margin: 0.5em auto !important;
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .cult-timeline::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    right: 20px;
+    width: 2px;
+    z-index: 1;
+  }
+
+  .admin-cult-controls {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px dashed var(--line);
+    display: grid;
+    gap: 0.5em;
+  }
+
 @media (max-width: 640px) {
   .main-area {
     padding: 14px;
@@ -1309,7 +1398,7 @@ select:focus {
   .cult-timeline {
     display: flex !important;
     flex-direction: column !important;
-    gap: 24px !important;
+    gap: 5em !important;
     margin: 32px auto !important;
     position: relative;
     width: 100%;
@@ -1604,6 +1693,165 @@ body.dark-mode .escala-col.empty-col { background: #374151; }
 body.dark-mode .escala-grid-row,
 body.dark-mode .escala-col { border-color: #000; }
 
+/* ============================================================
+   DARK MODE FIXES — cult-status, avatars, cards, file input
+   ============================================================ */
+
+/* 1. Cult Status Panel */
+body.dark-mode .cult-status-panel {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+}
+body.dark-mode .cult-status-panel p,
+body.dark-mode .cult-status-panel h2,
+body.dark-mode .cult-status-panel h3 {
+  color: #f9fafb !important;
+}
+body.dark-mode .status-option {
+  background: #111827 !important;
+  color: #f9fafb !important;
+  border-color: #374151 !important;
+}
+body.dark-mode .status-option:hover {
+  background: #1e3a5f !important;
+  border-color: var(--blue) !important;
+  color: #93c5fd !important;
+}
+body.dark-mode .status-option.active {
+  background: var(--blue) !important;
+  color: #fff !important;
+  border-color: var(--blue) !important;
+}
+
+/* 2. Profile pill no topbar */
+body.dark-mode .profile-pill {
+  background: #374151 !important;
+  color: #ffffff !important;
+  border: 1px solid #4b5563 !important;
+}
+
+/* 3. Settings avatar (tela de configurações) */
+body.dark-mode .settings-avatar {
+  background: #374151 !important;
+  color: #ffffff !important;
+  border: 1px solid #4b5563 !important;
+}
+
+/* 4. Avatar grande no perfil */
+body.dark-mode .avatar-large {
+  background: #374151 !important;
+  color: #ffffff !important;
+}
+
+/* 5. Leader avatar — iniciais ficavam brancas no fundo branco */
+body.dark-mode .leader-avatar:not(.has-photo) {
+  background: #3b4e6a !important;
+  color: #ffffff !important;
+  border: 1px solid #4b5563 !important;
+}
+
+/* 6. Nomes e textos nas conversas */
+body.dark-mode .leader-item strong,
+body.dark-mode .leader-item .leader-label,
+body.dark-mode .leader-item span:not(.leader-avatar) {
+  color: #f9fafb !important;
+}
+body.dark-mode #chatLeaderName {
+  color: #f9fafb !important;
+}
+
+/* 7. Todos os painéis/cards que usam background branco fixo */
+body.dark-mode .panel-form,
+body.dark-mode .leader-panel,
+body.dark-mode .chat-panel,
+body.dark-mode .settings-preview,
+body.dark-mode .agenda-detail,
+body.dark-mode .feed-card,
+body.dark-mode .agenda-card,
+body.dark-mode .content-card,
+body.dark-mode .shop-card,
+body.dark-mode .servant-card,
+body.dark-mode .profile-card,
+body.dark-mode .admin-list-item {
+  background: #1f2937 !important;
+  border-color: #374151 !important;
+}
+body.dark-mode .panel-form h3,
+body.dark-mode .leader-panel h2,
+body.dark-mode .chat-panel h2,
+body.dark-mode .settings-preview h2,
+body.dark-mode .feed-card h3,
+body.dark-mode .agenda-card h3 {
+  color: #f9fafb !important;
+}
+
+/* 8. Campo readonly */
+body.dark-mode input[readonly] {
+  background: #111827 !important;
+  color: #6b7280 !important;
+  border-color: #374151 !important;
+}
+
+  /* ============================================================
+    FILE INPUT BONITO
+    ============================================================ */
+  .file-input-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .file-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border-radius: 8px;
+    background: var(--blue);
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.88rem;
+    font-weight: 800;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    box-shadow: 0 4px 14px rgba(47, 115, 248, 0.3);
+    width: fit-content;
+    margin-top: 4px;
+  }
+  .file-upload-btn:hover {
+    background: #1655d5;
+    box-shadow: 0 6px 18px rgba(47, 115, 248, 0.45);
+    transform: translateY(-1px);
+  }
+  .file-upload-btn:active {
+    transform: scale(0.97);
+  }
+
+  .file-name-display {
+    display: block;
+    margin-top: 7px;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 280px;
+  }
+
+  body.dark-mode .file-upload-btn {
+    background: #2563eb;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  }
+  body.dark-mode .file-name-display {
+    color: #9ca3af;
+  }
 /* Celular: empilha em coluna única */
 @media (max-width: 640px) {
   .escala-grid-row {
@@ -1619,4 +1867,204 @@ body.dark-mode .escala-col { border-color: #000; }
   .escala-col.empty-col {
     display: none;
   }
+
+  /* 1. Título com o nome da pessoa no topo do chat */
+  body.dark-mode #chatLeaderName {
+    color: #f9fafb !important;
+  }
+
+  /* 2. Textos dos nomes na lista lateral de contatos */
+  body.dark-mode .leader-label,
+  body.dark-mode .leader-label strong {
+    color: #f9fafb !important;
+  }
+
+  /* 3. Bolinha de perfil (Avatar) com as iniciais */
+  body.dark-mode .leader-avatar {
+    background: #374151 !important; /* Cinza escuro elegante */
+    color: #ffffff !important;      /* Letra branca */
+    border: 1px solid #4b5563;      /* Borda sutil para separar do fundo */
+  }
+
+  /* 4. (Bônus) Fundo do contato quando ele está selecionado na lista */
+  body.dark-mode .leader-item:hover,
+  body.dark-mode .leader-item.active {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-radius: 8px;
+  }
+
+  /* ============================================================
+   CORREÇÕES DARK MODE — cult-status, avatars, file inputs
+   ============================================================ */
+
+/* --- 1. Cult Status Panel --- */
+body.dark-mode .cult-status-panel {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+body.dark-mode .cult-status-panel p,
+body.dark-mode .cult-status-panel h2 {
+  color: #f9fafb;
+}
+
+body.dark-mode .status-option {
+  background: #111827;
+  color: #f9fafb;
+  border-color: #374151;
+}
+
+body.dark-mode .status-option:hover {
+  background: #1e3a5f;
+  border-color: var(--blue);
+  color: #93c5fd;
+}
+
+body.dark-mode .status-option.active {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+
+/* --- 2. Profile pill no topbar --- */
+body.dark-mode .profile-pill {
+  background: #374151;
+  color: #ffffff;
+  border: 1px solid #4b5563;
+}
+
+/* --- 3. Settings avatar (tela de configurações) --- */
+body.dark-mode .settings-avatar {
+  background: #374151 !important;
+  color: #ffffff !important;
+  border: 1px solid #4b5563;
+}
+
+/* --- 4. Avatar grande no perfil --- */
+body.dark-mode .avatar-large {
+  background: #374151 !important;
+  color: #ffffff !important;
+}
+
+/* --- 5. Leader avatar nas conversas (iniciais ficavam brancas no fundo branco) --- */
+body.dark-mode .leader-avatar:not(.has-photo) {
+  background: #3b4e6a !important;
+  color: #ffffff !important;
+  border: 1px solid #4b5563;
+}
+
+/* --- 6. Nome das pessoas na lista de conversas --- */
+body.dark-mode .leader-item strong,
+body.dark-mode .leader-item .leader-label,
+body.dark-mode .leader-item .leader-label strong,
+body.dark-mode .leader-item span,
+body.dark-mode #chatLeaderName {
+  color: #f9fafb !important;
+}
+
+/* Role label (ex: "Líder", "Pastor") abaixo do nome */
+body.dark-mode .leader-item .role-label,
+body.dark-mode .leader-item small {
+  color: #9ca3af !important;
+}
+
+/* --- 7. Painéis gerais que usam background: var(--surface) mas ficam brancos --- */
+body.dark-mode .panel-form,
+body.dark-mode .leader-panel,
+body.dark-mode .chat-panel,
+body.dark-mode .settings-preview,
+body.dark-mode .agenda-detail,
+body.dark-mode .feed-card,
+body.dark-mode .agenda-card,
+body.dark-mode .content-card,
+body.dark-mode .shop-card,
+body.dark-mode .servant-card,
+body.dark-mode .profile-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+body.dark-mode .panel-form h3,
+body.dark-mode .leader-panel h2,
+body.dark-mode .chat-panel h2,
+body.dark-mode .settings-preview h2 {
+  color: #f9fafb;
+}
+
+/* --- 8. Campo "Cargo" readonly --- */
+body.dark-mode input[readonly] {
+  background: #111827 !important;
+  color: #6b7280 !important;
+  border-color: #374151 !important;
+  cursor: not-allowed;
+}
+
+  /* ============================================================
+    FILE INPUT BONITO — esconde o nativo, mostra botão custom
+    ============================================================ */
+
+  /* Esconde o input nativo feio */
+  .file-input-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* Botão estilizado que abre o file picker */
+  .file-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    background: var(--blue);
+    color: #fff;
+    font-size: 0.88rem;
+    font-weight: 800;
+    cursor: pointer;
+    border: none;
+    transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
+    box-shadow: 0 4px 14px rgba(47, 115, 248, 0.3);
+    width: fit-content;
+    margin-top: 4px;
+  }
+
+  .file-upload-btn:hover {
+    background: var(--blue-dark, #1655d5);
+    box-shadow: 0 6px 18px rgba(47, 115, 248, 0.45);
+    transform: translateY(-1px);
+  }
+
+  .file-upload-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* Nome do arquivo selecionado */
+  .file-name-display {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+  }
+
+  /* Dark mode: file button e nome */
+  body.dark-mode .file-upload-btn {
+    background: #2563eb;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  }
+
+  body.dark-mode .file-name-display {
+    color: #9ca3af;
+  }
+
 }

@@ -1787,6 +1787,16 @@ function bindEvents() {
     });
   }
 
+  // ---- File input: mostra nome do arquivo escolhido ----
+  document.querySelectorAll('input[type="file"].file-input-hidden').forEach(input => {
+    input.addEventListener('change', () => {
+      const display = document.getElementById(input.id + 'Name');
+      if (display) {
+        display.textContent = input.files[0]?.name || 'Nenhum arquivo selecionado';
+      }
+    });
+  });
+
   const profileForm = document.querySelector("#profileForm");
   if (profileForm) profileForm.addEventListener("submit", saveProfile);
 
