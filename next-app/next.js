@@ -29,7 +29,7 @@ const leaderPhotos = {
 const cultStages = ["inativo", "Louvor", "Pregação", "Apelo", "Finalizado"];
 
 const permissionsByRole = {
-  jovem: ["home", "agenda", "conteudo", "loja", "oracao", "conversa", "configuracoes"],
+  jovem: ["home", "agenda", "conteudo", "loja", "oracao", "conversa", "servir", "configuracoes"],
   responsavel: ["home", "agenda", "culto", "configuracoes"],
   lider: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "configuracoes"],
   sublider: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "escalas", "gestao", "configuracoes"],
@@ -148,10 +148,7 @@ function canManageAll() {
 function allowedViews() {
   const base = [...(permissionsByRole[currentUser.role] || permissionsByRole.jovem)];
   if (currentUser.hasServo && !base.includes("servos")) base.push("servos");
-  // Libera a aba de Equipes/Grupos para qualquer servo
   if (currentUser.hasServo && !base.includes("grupos")) base.push("grupos"); 
-  
-  // Garante que liderança também tenha acesso direto
   if (canManage() && !base.includes("grupos")) base.push("grupos");
   return base;
 }
@@ -348,13 +345,11 @@ function renderAgendaFilterOptions() {
   const filterEl = document.querySelector("#agendaFilter");
   if (!filterEl) return;
 
-  // Regra 1: Jovem sem cargo de servo não tem o botão de filtro
   if (currentUser.role === "jovem" && !currentUser.hasServo) {
     filterEl.style.display = "none";
     return;
   }
 
-  // Prepara as opções baseadas no nível de acesso
   let options = `<option value="todos">Filtro: Todos</option>`;
   
   if (canManageAll() || currentUser.role === "lider") {
@@ -499,7 +494,6 @@ function canManageShop() {
 function renderShop() {
   const isManager = canManageShop();
   
-  // Exibe ou esconde o painel de criação do produto
   const adminPanel = document.querySelector("#shopAdminPanel");
   if (adminPanel) {
     adminPanel.classList.toggle("hidden", !isManager);
@@ -508,7 +502,6 @@ function renderShop() {
   document.querySelector("#shopGrid").innerHTML = getProducts()
     .map(
       (product) => {
-        // Usa imagem customizada caso cadastrada, senão mantém os gradientes padrão do CSS
         const styleArt = product.image 
           ? `background-image: url('${product.image}'); background-size: cover; background-position: center;` 
           : '';
@@ -564,7 +557,6 @@ function renderCultStatus() {
   document.querySelector("#cultStatusText").textContent = statusText[status] || statusText.inativo;
   document.querySelector("#cultRoleHint").textContent = canManage() ? "Controle Liderança" : "Somente leitura";
 
-  // Renderiza a Timeline (sem o inativo)
   const timelineStages = cultStages.filter(s => s !== "inativo");
   const currentIndex = timelineStages.indexOf(status);
   
@@ -586,7 +578,6 @@ function renderCultStatus() {
     `;
   }).join("");
 
-  // Renderiza os botões de controle APENAS se for lider/admin
   const controlsContainer = document.querySelector("#cultStatusOptions");
   if (canManage()) {
     controlsContainer.style.display = "grid";
@@ -615,14 +606,12 @@ function renderChatContacts() {
 
   const isLeader = ["lider", "pastor", "missionaria", "admin"].includes(currentUser.role);
   
-  // Muda os títulos dependendo de quem está logado
   document.querySelector("#chatListEyebrow").textContent = isLeader ? "Nova conversa" : "Escolha alguém";
   document.querySelector("#chatListTitle").textContent = isLeader ? "Jovens do Next" : "Líderes disponíveis";
   
   let contactsHTML = "";
 
   if (!isLeader) {
-     // JOVEM VENDO A LISTA: Mostra os líderes, filtrando pela pesquisa
      const filteredLeaders = leaderNames.filter(name => name.toLowerCase().includes(chatSearchTerm));
      if (!chatTargetName && filteredLeaders.length > 0) {
          chatTargetName = filteredLeaders[0];
@@ -638,7 +627,6 @@ function renderChatContacts() {
         `;
      }).join("");
   } else {
-     // LIDERANÇA VENDO A LISTA: Mostra os jovens cadastrados, filtrando pela pesquisa
      const jovens = getUsers().filter(u => u.role === "jovem" && u.name.toLowerCase().includes(chatSearchTerm));
      if (!chatTargetId && jovens.length > 0) {
          chatTargetName = jovens[0].name;
@@ -665,7 +653,6 @@ function renderYoungChat() {
 
   const isLeader = ["lider", "pastor", "missionaria", "admin"].includes(currentUser.role);
   
-  // Oculta fisicamente a caixinha de anônimo na aba de Conversa para a liderança
   const anonToggle = document.querySelector(".anon-toggle");
   if (anonToggle) anonToggle.style.display = isLeader ? "none" : "flex";
 
@@ -708,7 +695,6 @@ function renderYoungChat() {
     : `<div class="chat-bubble system">Inicie a conversa enviando uma mensagem.</div>`;
 }
 
-// --- LÓGICA DE GRUPOS DE EQUIPE ---
 let currentGroupId = "Geral";
 const groupNames = {
   "Geral": "Geral (Todos os Servos)",
@@ -729,25 +715,19 @@ function renderGroupList() {
   let myGroups = [];
   let isAnyEventValid = false;
 
-  // Filtra os eventos que estão dentro da janela de 7 dias antes e não foram finalizados
   const upcomingEvents = events.filter(e => {
     let diff = Number(e.date) - today;
-    if (diff < 0) diff += 30; // Tratamento básico para virada de mês
+    if (diff < 0) diff += 30; 
     
-    // Se for hoje e o culto já acabou, a sala fecha
     if (diff === 0 && cultStatus === "Finalizado") return false;
-    
-    // O evento acontece nos próximos 7 dias (incluindo hoje)?
     return diff >= 0 && diff <= 7;
   });
 
   if (upcomingEvents.length > 0) {
     if (canManage()) {
-      // Liderança vê tudo sempre que tem um evento na janela de 1 semana
       myGroups = ["Geral", "Servo", "Midia", "Intercessao"];
       isAnyEventValid = true;
     } else {
-      // Jovens veem se estiverem escalados para algum desses eventos próximos
       const myUpcomingScales = allScales.filter(scale => {
         const isUpcoming = upcomingEvents.some(e => e.id === scale.eventId);
         const isAssigned = scale.assignments.some(a => a.userId === currentUser.id);
@@ -767,7 +747,6 @@ function renderGroupList() {
   const formInput = document.querySelector("#groupChatInput");
   const submitBtn = document.querySelector("#groupChatForm button");
 
-  // Bloqueio visual se não tiver acesso (Longe do culto, finalizado ou não escalado)
   if (!isAnyEventValid || myGroups.length === 0) {
      listEl.innerHTML = `<p class="safety-note" style="margin-top: 0;">Nenhum grupo ativo. Os chats abrem 1 semana antes do culto exclusivamente para a equipe escalada e somem após o encerramento.</p>`;
      if (formInput) formInput.disabled = true;
@@ -777,7 +756,6 @@ function renderGroupList() {
      return;
   }
 
-  // Mantém no grupo válido
   if (!myGroups.includes(currentGroupId)) {
      currentGroupId = myGroups[0];
   }
@@ -803,7 +781,6 @@ function renderGroupChat() {
   
   if (!windowEl) return;
 
-  // Se o usuário não tiver acesso a nada no momento
   if (!currentGroupId) {
      windowEl.innerHTML = `<div class="chat-bubble system">Chat encerrado ou indisponível. Ele abre 1 semana antes do culto para quem está escalado.</div>`;
      if (banner) banner.style.display = "none";
@@ -865,7 +842,6 @@ function togglePinMessage(msgId) {
   const msg = msgs.find(m => m.id === msgId);
   if (!msg) return;
   
-  // Desfixa todas as outras do mesmo grupo e inverte o status dessa
   msgs.forEach(m => { if (m.groupId === msg.groupId) m.isPinned = false; });
   msg.isPinned = !msg.isPinned;
   
@@ -877,8 +853,6 @@ function saveYoungMessage(text) {
   if (!chatTargetName || !chatTargetId) return;
 
   const isLeader = ["lider", "pastor", "missionaria", "admin"].includes(currentUser.role);
-  
-  // Trava de segurança no banco de dados: liderança NUNCA manda mensagem anônima
   const anonymous = isLeader ? false : (document.querySelector("#anonymousChat")?.checked || false);
 
   const targetLeaderName = isLeader ? currentUser.name : chatTargetName;
@@ -916,7 +890,7 @@ function changeUserRole(event) {
 
   saveItem("next_users", { ...user, role: newRole });
   document.querySelector("#roleChangeMessage").textContent = `Cargo de ${user.name} atualizado com sucesso!`;
-  renderRoleAdminOptions(); // Atualiza a lista com o novo cargo
+  renderRoleAdminOptions();
 }
 
 function threadIdFor(leaderName, userId = currentUser.id) {
@@ -924,11 +898,9 @@ function threadIdFor(leaderName, userId = currentUser.id) {
 }
 
 function canSeeThread(message) {
-  // Se for da liderança (Líder, Pastor ou Missionária), só vê se o nome bater
   if (["lider", "pastor", "missionaria"].includes(currentUser.role)) {
     return message.leaderName === currentUser.name;
   }
-  // Se for jovem, só vê as mensagens que ele mesmo enviou
   return message.senderId === currentUser.id;
 }
 
@@ -941,9 +913,7 @@ function messagesForYoungLeader(leaderName) {
 
 function senderLabel(message) {
   if (message.senderId === currentUser.id) return "Você";
-  // O Pastor, a Missionária e o Admin enxergam quem enviou
   if (message.anonymous && canManageAll()) return `Anônimo (auditoria: ${message.senderName})`;
-  // Os líderes normais veem apenas "Anônimo"
   if (message.anonymous) return "Anônimo";
   return message.senderName || message.leaderName || "Mensagem";
 }
@@ -1113,16 +1083,13 @@ function fillProfileForm(profile) {
     const hiddenRoles = ["admin", "lider", "pastor", "missionaria"];
     
     if (hiddenRoles.includes(currentUser.role)) {
-      // Oculta completamente para Admin, Líder, Pastor e Missionária
       respGroup.style.display = "none";
     } else if (currentUser.role === "responsavel") {
-      // Modifica o rótulo para os pais
       respGroup.style.display = "grid";
       respGroup.childNodes[0].textContent = "Responsável por";
       respInput.placeholder = "Nome do filho / jovem";
       respInput.value = profile.responsible || "";
     } else {
-      // Mantém padrão para o Jovem
       respGroup.style.display = "grid";
       respGroup.childNodes[0].textContent = "Responsável";
       respInput.placeholder = "Nome do responsável";
@@ -1187,7 +1154,6 @@ function giveServoRole(event) {
   const user = getUsers().find((item) => item.id === userId);
   if (!user) return;
 
-  // Pega os setores marcados (garantindo que "Servo" sempre vá)
   const checks = Array.from(document.querySelectorAll(".servo-dept-check"));
   const types = [];
   checks.forEach(c => {
@@ -1318,42 +1284,30 @@ function populateScaleEvents() {
 }
 
 function renderDynamicScaleFields() {
-  const dept = document.querySelector("#scaleDeptSelect").value;
-  const eventId = document.querySelector("#scaleEventSelect").value;
+  const dept = document.querySelector("#scaleDeptSelect")?.value;
+  const eventId = document.querySelector("#scaleEventSelect")?.value;
   const container = document.querySelector("#dynamicFunctionsContainer");
-  if (!container) return;
+  
+  const msgEl = document.querySelector("#scaleMessage");
+  if (msgEl) msgEl.textContent = "";
+
+  if (!container || !dept) return;
 
   const funcs = functionsMap[dept] || [];
-  
-  // Encontra quem tem o setor atual incluso no perfil
   const eligibleServants = getUsers().filter(u => u.hasServo && u.servoType && u.servoType.includes(dept));
-
-  // CHECAGEM DE CONFLITO: Quem já foi escalado para ESTE evento em QUALQUER setor?
-  const allScales = getAll("next_scales", []);
-  const scalesForThisEvent = allScales.filter(s => s.eventId === eventId);
   const alreadyScheduledIds = new Set();
-  scalesForThisEvent.forEach(scale => {
-     scale.assignments.forEach(a => alreadyScheduledIds.add(a.userId));
-  });
+  
+  getAll("next_scales", []).filter(s => s.eventId === eventId).forEach(scale => scale.assignments.forEach(a => alreadyScheduledIds.add(a.userId)));
 
-  container.innerHTML = funcs.map(f => {
-    const selectOptions = `<option value="">-- Selecione o Voluntário --</option>` + 
-      eligibleServants.map(s => {
-        const isScheduled = alreadyScheduledIds.has(s.id);
-        const disabledAttr = isScheduled ? "disabled" : "";
-        const labelSuffix = isScheduled ? " (Já escalado no culto)" : "";
-        return `<option value="${s.id}" ${disabledAttr}>${s.name}${labelSuffix}</option>`;
-      }).join("");
-
-    return `
-      <label style="display: flex; flex-direction: column; gap: 4px;">
-        Função: <strong>${f}</strong>
-        <select class="scale-func-assign" data-func="${f}">
-          ${selectOptions}
-        </select>
-      </label>
-    `;
-  }).join("");
+  container.innerHTML = funcs.map(f => `
+    <label style="display: flex; flex-direction: column; gap: 4px;">
+      Função: <strong>${f}</strong>
+      <select class="scale-func-assign" data-func="${f}">
+        <option value="">-- Selecione --</option>
+        ${eligibleServants.map(s => `<option value="${s.id}" ${alreadyScheduledIds.has(s.id) ? "disabled" : ""}>${s.name}${alreadyScheduledIds.has(s.id) ? " (Já escalado)" : ""}</option>`).join("")}
+      </select>
+    </label>
+  `).join("");
 }
 
 function renderMyScales() {
@@ -1392,7 +1346,6 @@ function renderMyScales() {
     const ev = events.find(e => e.id === scale.eventId);
     const userAssignment = scale.assignments.find(a => a.userId === currentUser.id);
 
-    // 1. Renderiza o Card de Resumo Individual
     myCardsHtml += `
       <article class="feed-card" style="grid-template-columns: 1fr; gap: 10px; background: var(--surface);">
         <span class="feed-tag" style="background: var(--blue); color: #fff; width: fit-content; padding: 2px 8px;">Equipe ${scale.dept}</span>
@@ -1401,7 +1354,6 @@ function renderMyScales() {
       </article>
     `;
 
-    // 2. Renderiza a Planilha Visual se for escala dos Servos
     if (scale.dept === "Servo") {
       const grouped = {};
       scale.assignments.forEach(a => {
@@ -1409,10 +1361,9 @@ function renderMyScales() {
         grouped[a.functionName].push(a.userName);
       });
 
-      // Motor que cria as colunas e os nomes
       const renderGroup = (roles) => {
         return roles.map(r => {
-          if (!r) return `<div class="escala-col empty-col"></div>`; // Quadrado vazio para preencher tabela
+          if (!r) return `<div class="escala-col empty-col"></div>`; 
           const names = grouped[r] || ["-"];
           return `
             <div class="escala-col">
@@ -1423,10 +1374,9 @@ function renderMyScales() {
         }).join("");
       };
 
-      // Divide as funções exatas em linhas de 3 colunas (como no seu Excel)
       const block1 = ["Porta", "Recepção", "Integração"];
       const block2 = ["Manutenção", "Suporte", "Ofertório"];
-      const block3 = ["Sub Coordenador", "Coordenador", ""]; // O vazio no final mantém o alinhamento da tabela perfeito
+      const block3 = ["Sub Coordenação", "Coordenação", ""];
 
       geralHtml += `
         <div class="escala-table-wrapper">
@@ -1467,8 +1417,8 @@ function renderMyScales() {
 function bindEvents() {
   navButtons.forEach((button) => button.addEventListener("click", () => setView(button.dataset.target)));
 
-  document.querySelector("#menuToggle").addEventListener("click", () => document.body.classList.add("menu-open"));
-  document.querySelector("#backdrop").addEventListener("click", () => document.body.classList.remove("menu-open"));
+  document.querySelector("#menuToggle")?.addEventListener("click", () => document.body.classList.add("menu-open"));
+  document.querySelector("#backdrop")?.addEventListener("click", () => document.body.classList.remove("menu-open"));
 
   document.querySelectorAll("[data-content-tab]").forEach((tab) => {
     tab.addEventListener("click", () => {
@@ -1477,7 +1427,6 @@ function bindEvents() {
     });
   });
 
-  // Trocar de Grupo
   document.querySelector("#groupList")?.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-group-target]");
     if (!btn) return;
@@ -1486,7 +1435,6 @@ function bindEvents() {
     renderGroupChat();
   });
 
-  // Enviar Mensagem no Grupo
   document.querySelector("#groupChatForm")?.addEventListener("submit", (e) => {
     e.preventDefault();
     const input = document.querySelector("#groupChatInput");
@@ -1495,19 +1443,15 @@ function bindEvents() {
     renderGroupChat();
   });
 
-  // Fixar Aviso (Apenas Liderança)
   document.querySelector("#groupChatWindow")?.addEventListener("click", (e) => {
     const pinBtn = e.target.closest("[data-pin-msg]");
     if (!pinBtn || !canManage()) return;
     togglePinMessage(pinBtn.dataset.pinMsg);
   });
 
-  // --- OUVIDORES DE EVENTO DE ESCALAS E INSCRIÇÃO DINÂMICA ---
-  
-  // Troca de campos ao mudar o ministério na criação da escala
   document.querySelector("#scaleDeptSelect")?.addEventListener("change", renderDynamicScaleFields);
   document.querySelector("#scaleEventSelect")?.addEventListener("change", renderDynamicScaleFields);
-  // Processo de publicação de escalas
+  
   document.querySelector("#saveScaleBtn")?.addEventListener("click", () => {
     const eventId = document.querySelector("#scaleEventSelect").value;
     const dept = document.querySelector("#scaleDeptSelect").value;
@@ -1542,7 +1486,6 @@ function bindEvents() {
     renderMyScales();
   });
 
-  // Fluxo Dinâmico Passo a Passo do Formulário "Quero Servir"
   const appReason = document.querySelector("#appReason");
   const qGroup2 = document.querySelector("#qGroup2");
   const qGroup3 = document.querySelector("#qGroup3");
@@ -1572,7 +1515,6 @@ function bindEvents() {
     submitAppBtn.style.display = "block";
   });
 
-  // Envio seguro injetando Nome e Idade de forma invisível
   document.querySelector("#applicationForm")?.addEventListener("submit", (e) => {
     e.preventDefault();
     
@@ -1597,17 +1539,15 @@ function bindEvents() {
     submitAppBtn.style.display = "none";
   });
 
-  // Ouvinte para Sair da Conta
   const logoutBtn = document.querySelector("#logoutBtn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
       if (confirm("Tem certeza que deseja sair da sua conta?")) {
-        NextAuth.logout(); // Apaga a sessão e volta para a tela de login
+        NextAuth.logout();
       }
     });
   }
 
-  // --- MODO ESCURO ---
   const themeBtn  = document.querySelector("#themeToggleBtn");
   const themeText = document.querySelector("#themeToggleText");
 
@@ -1622,7 +1562,6 @@ function bindEvents() {
     localStorage.setItem("next_theme", dark ? "dark" : "light");
   }
 
-  // Carrega preferência salva ao abrir a página
   applyTheme(localStorage.getItem("next_theme") === "dark");
 
   if (themeBtn) {
@@ -1631,8 +1570,7 @@ function bindEvents() {
       applyTheme(isDark);
     });
   }
-  
-  // Leitor de Imagem para a Lojinha
+
   const shopImageInput = document.querySelector("#shopProductImage");
   if (shopImageInput) {
     shopImageInput.addEventListener("change", (event) => {
@@ -1653,42 +1591,37 @@ function bindEvents() {
   if (agendaFilter) {
     agendaFilter.addEventListener("change", (event) => {
       currentAgendaFilter = event.target.value;
-      renderCalendar(); // Recarrega a tela com os eventos filtrados
+      renderCalendar();
     });
   }
 
   const roleForm = document.querySelector("#roleChangeForm");
   if (roleForm) roleForm.addEventListener("submit", changeUserRole);
 
-  // Ouvinte para excluir evento (Apenas para liderança)
-  document.querySelector("#agendaDetail").addEventListener("click", (event) => {
+  document.querySelector("#agendaDetail")?.addEventListener("click", (event) => {
     const deleteBtn = event.target.closest("#deleteEventBtn");
     if (!deleteBtn) return;
 
     const eventId = deleteBtn.dataset.eventId;
     if (confirm("Tem certeza que deseja remover este evento do cronograma?")) {
-      NextDB.remove("next_events", eventId); // Remove do localStorage usando seu banco mock
-      renderCalendar(); // Atualiza a agenda e os detalhes automaticamente
+      NextDB.remove("next_events", eventId);
+      renderCalendar(); 
     }
   });
 
-  document.querySelector("#cultStatusOptions").addEventListener("click", (event) => {
+  document.querySelector("#cultStatusOptions")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-stage]");
     if (!button || !canManage()) return;
     setValue("next_cult_status", button.dataset.stage);
     renderCultStatus();
   });
-
-  // --- NOVA LÓGICA DE CONVERSAS E PESQUISA ---
   
-  // Barra de Pesquisa de Contatos
   document.querySelector("#chatSearchInput")?.addEventListener("input", (event) => {
     chatSearchTerm = event.target.value.toLowerCase();
     renderChatContacts();
   });
 
-  // Clique em um Contato (Jovem ou Líder)
-  document.querySelector("#leaderList").addEventListener("click", (event) => {
+  document.querySelector("#leaderList")?.addEventListener("click", (event) => {
     const btn = event.target.closest("[data-chat-target]");
     if (!btn) return;
     chatTargetName = btn.dataset.chatName;
@@ -1697,7 +1630,7 @@ function bindEvents() {
     renderYoungChat();
   });
 
-  document.querySelector("#chatForm").addEventListener("submit", (event) => {
+  document.querySelector("#chatForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
     const input = document.querySelector("#chatInput");
     const text = input.value.trim();
@@ -1707,14 +1640,14 @@ function bindEvents() {
     renderYoungChat();
   });
 
-  document.querySelector("#threadList").addEventListener("click", (event) => {
+  document.querySelector("#threadList")?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-thread]");
     if (!button) return;
     selectedThreadId = button.dataset.thread;
     renderLeaderInbox();
   });
 
-  document.querySelector("#leaderReplyForm").addEventListener("submit", (event) => {
+  document.querySelector("#leaderReplyForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
     const input = document.querySelector("#leaderReplyInput");
     const text = input.value.trim();
@@ -1724,13 +1657,13 @@ function bindEvents() {
     renderLeaderInbox();
   });
 
-  document.querySelector("#agendaList").addEventListener("click", (event) => {
+  document.querySelector("#agendaList")?.addEventListener("click", (event) => {
     const agendaCard = event.target.closest("[data-agenda-index]");
     if (!agendaCard) return;
     selectAgendaItem(Number(agendaCard.dataset.agendaIndex));
   });
 
-  document.querySelector("#calendarStrip").addEventListener("click", (event) => {
+  document.querySelector("#calendarStrip")?.addEventListener("click", (event) => {
     const dayChip = event.target.closest("[data-day]");
     if (!dayChip) return;
     const index = getEvents()
@@ -1749,7 +1682,7 @@ function bindEvents() {
     `;
   });
 
-  document.querySelector("#profilePhoto").addEventListener("change", (event) => {
+  document.querySelector("#profilePhoto")?.addEventListener("change", (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -1766,7 +1699,6 @@ function bindEvents() {
     reader.readAsDataURL(file);
   });
   
-  // --- LÓGICA DE GERENCIAMENTO DA LOJINHA (LÍDER, ADMIN, PASTOR, MISSIONÁRIA) ---
   const shopForm = document.querySelector("#shopManageForm");
   const shopImageHint = document.querySelector("#shopProductImageHint");
 
@@ -1779,7 +1711,6 @@ function bindEvents() {
       const quantity = parseInt(document.querySelector("#shopProductQuantity").value) || 0;
       const text = document.querySelector("#shopProductText").value.trim();
 
-      // Se estiver editando e não mandou foto nova, mantém a antiga
       let finalImage = shopProductImageData;
       if (id && !finalImage) {
         const existingProduct = getProducts().find(p => p.id === id);
@@ -1800,7 +1731,6 @@ function bindEvents() {
       
       document.querySelector("#shopAdminMessage").textContent = id ? "Produto atualizado com sucesso!" : "Produto cadastrado com sucesso!";
 
-      // Limpar formulário
       shopForm.reset();
       shopProductImageData = "";
       if (shopImageHint) shopImageHint.style.display = "none";
@@ -1821,7 +1751,6 @@ function bindEvents() {
     });
   }
 
-  // Captura cliques dinâmicos nos botões Editar e Remover dentro da Grid da Lojinha
   const shopGridEl = document.querySelector("#shopGrid");
   if (shopGridEl) {
     shopGridEl.addEventListener("click", (event) => {
@@ -1838,7 +1767,6 @@ function bindEvents() {
           document.querySelector("#shopProductQuantity").value = product.quantity ?? 0;
           document.querySelector("#shopProductText").value = product.text || "";
           
-          // Reseta o campo de arquivo e mostra o aviso se já tiver imagem
           document.querySelector("#shopProductImage").value = "";
           shopProductImageData = "";
           if (shopImageHint) shopImageHint.style.display = product.image ? "block" : "none";
@@ -1859,7 +1787,6 @@ function bindEvents() {
     });
   }
 
-  // --- OUTROS FORMULÁRIOS DE SISTEMA ---
   const profileForm = document.querySelector("#profileForm");
   if (profileForm) profileForm.addEventListener("submit", saveProfile);
 
@@ -1881,15 +1808,9 @@ async function boot() {
   setupPermissions();
   bindEvents();
   
-  // Logo abaixo dos outros "renders" no topo do boot():
   renderGroupList();
   renderGroupChat();
-  // E lá no setInterval (o atualizador de 3 em 3 segundos) adicione:
-  if (document.querySelector("#grupos").classList.contains("active")) {
-    renderGroupChat();
-  }
 
-  // Renderiza tudo na hora com o que já tem salvo no celular (Super Rápido)
   renderFeed();
   renderCalendar();
   renderContentCards("#playlists", playlists);
@@ -1905,46 +1826,37 @@ async function boot() {
   fillProfileForm(getProfileFromStorage());
   setView(views.find((view) => view.classList.contains("active") && canView(view.id))?.id || allowedViews()[0]);
 
-  // Vai na nuvem e puxa as mensagens novas silenciosamente
-  if (typeof NextDB.syncFromCloud === 'function') {
+  if (typeof NextDB !== "undefined" && typeof NextDB.syncFromCloud === 'function') {
     await NextDB.syncFromCloud();
     renderYoungChat();
     renderLeaderInbox();
     if (typeof renderPrayerAdminList === 'function') renderPrayerAdminList();
 
-    // Cria o "Efeito WhatsApp": Atualiza o chat a cada 3 segundos se a pessoa estiver na aba
     setInterval(async () => {
       if (typeof NextDB.syncFromCloud === 'function') {
         await NextDB.syncFromCloud();
       }
       
-      // 1. Se estiver no Início, atualiza avisos e andamento do culto
-      if (document.querySelector("#home").classList.contains("active")) {
+      if (document.querySelector("#home")?.classList.contains("active")) {
         renderFeed();
         renderCultStatus();
       }
-      // 2. Se estiver na Agenda, atualiza o calendário e lista de eventos
-      if (document.querySelector("#agenda").classList.contains("active")) {
+      if (document.querySelector("#agenda")?.classList.contains("active")) {
         renderCalendar();
       }
-      // 3. Se estiver no Chat Privado com Líder
-      if (document.querySelector("#conversa").classList.contains("active")) {
+      if (document.querySelector("#conversa")?.classList.contains("active")) {
         renderYoungChat();
       }
-      // 4. Se for líder na Caixa de Entrada de Mensagens
-      if (document.querySelector("#mensagens").classList.contains("active")) {
+      if (document.querySelector("#mensagens")?.classList.contains("active")) {
         renderLeaderInbox();
       }
-      // 5. Se estiver nos Grupos de Equipe (Servos, Mídia, Intercessão)
-      if (document.querySelector("#grupos") && document.querySelector("#grupos").classList.contains("active")) {
+      if (document.querySelector("#grupos")?.classList.contains("active")) {
         if (typeof renderGroupChat === 'function') renderGroupChat();
       }
-      // 6. Se estiver na aba Servos vendo as próprias escalas
-      if (document.querySelector("#servos") && document.querySelector("#servos").classList.contains("active")) {
+      if (document.querySelector("#servos")?.classList.contains("active")) {
         if (typeof renderMyScales === 'function') renderMyScales();
       }
-      // 7. Se for administrador na aba de Gestão
-      if (document.querySelector("#gestao").classList.contains("active") && typeof renderPrayerAdminList === 'function') {
+      if (document.querySelector("#gestao")?.classList.contains("active") && typeof renderPrayerAdminList === 'function') {
         renderPrayerAdminList();
       }
     }, 3000);

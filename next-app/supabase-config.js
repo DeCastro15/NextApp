@@ -56,199 +56,172 @@ const NextAuth = (() => {
   // Usuários de demonstração — em produção vêm do Supabase Auth + tabela users
   const MOCK_USERS = [
     {
-      id: 'usr_0',
-      name: 'Secretaria Next',
-      email: 'admin@next.com',
-      password: 'next2025',
-      role: 'admin',
-      initials: 'AD',
+      id: 'usr_0', 
+      name: 'Secretaria Next', 
+      email: 'admin@next.com', 
+      password: 'next2025', 
+      role: 'admin', 
+      initials: 'AD'
     },
     {
-      id: 'usr_1',
-      name: 'Pastor Roberval',
-      email: 'pastor.roberval@next.com',
-      password: 'next2025',
-      role: 'pastor',
-      initials: 'PR',
+      id: 'usr_1', 
+      name: 'Pastor Roberval', 
+      email: 'pastor.roberval@next.com', 
+      password: 'next2025', 
+      role: 'pastor', 
+      initials: 'PR'
     },
     {
-      id: 'usr_2',
-      name: 'Missionária Luciana',
-      email: 'missionaria.luciana@next.com',
-      password: 'next2025',
-      role: 'missionaria',
-      initials: 'ML',
+      id: 'usr_2', 
+      name: 'Missionária Luciana', 
+      email: 'missionaria.luciana@next.com', 
+      password: 'next2025', 
+      role: 'missionaria', 
+      initials: 'ML'
     },
     {
-      id: 'usr_3',
-      name: 'Davi',
-      email: 'davi@next.com',
-      password: 'next2025',
-      role: 'lider',
-      initials: 'DA',
+      id: 'usr_3', 
+      name: 'Davi', 
+      email: 'davi@next.com', 
+      password: 'next2025', 
+      role: 'lider', 
+      initials: 'DA'
     },
     {
-      id: 'usr_4',
-      name: 'Dhara',
-      email: 'dhara@next.com',
-      password: 'next2025',
-      role: 'lider',
-      initials: 'DH',
+      id: 'usr_4', 
+      name: 'Dhara', 
+      email: 'dhara@next.com', 
+      password: 'next2025', 
+      role: 'lider', 
+      initials: 'DH'
     },
     {
-      id: 'usr_5',
-      name: 'Matheus',
-      email: 'matheus@next.com',
-      password: 'next2025',
-      role: 'lider',
-      initials: 'MA',
+      id: 'usr_5', 
+      name: 'Matheus', 
+      email: 'matheus@next.com', 
+      password: 'next2025', 
+      role: 'lider', 
+      initials: 'MA'
     },
     {
-      id: 'usr_6',
-      name: 'Julya',
-      email: 'julya@next.com',
-      password: 'next2025',
-      role: 'lider',
-      initials: 'JU',
+      id: 'usr_6', 
+      name: 'Julya', 
+      email: 'julya@next.com', 
+      password: 'next2025', 
+      role: 'lider', 
+      initials: 'JU'
     },
     {
-      id: 'usr_7',
-      name: 'João Victor',
-      email: 'jovem@next.com',
-      password: 'next2025',
+      id: 'usr_7', 
+      name: 'João Victor', 
+      email: 'jovem@next.com', 
+      password: 'next2025', 
+      role: 'jovem', 
+      initials: 'JV', 
+      hasServo: false, 
+      age: 16, 
+      phone: '', 
+      responsible: 'Ana Costa'
+    },
+    {
+      id: 'usr_8', 
+      name: 'Maria Santos', 
+      email: 'maria@next.com', 
+      password: 'next2025', 
+      role: 'jovem', 
+      initials: 'MS', 
+      hasServo: true, 
+      servoType: ["Servo"], 
+      age: 15
+    },
+    {
+      id: 'usr_9', 
+      name: 'Pedro Lima', 
+      email: 'pedro@next.com', 
+      password: 'next2025', 
+      role: 'jovem', 
+      initials: 'PL', 
+      hasServo: false, 
+      age: 17
+    },
+    {
+      id: 'usr_10', 
+      name: 'Beatriz Rocha', 
+      email: 'bia@next.com', 
+      password: 'next2025', 
+      role: 'jovem', 
+      initials: 'BR', 
+      hasServo: false, 
+      age: 14
+    },
+    {
+      id: 'usr_11', 
+      name: 'Ana Costa', 
+      email: 'responsavel@next.com', 
+      password: 'next2025', 
+      role: 'responsavel', 
+      initials: 'AC', 
+      childName: 'João Victor'
+    },
+    {
+      id: 'usr_12', 
+      name: 'Ana Ruth', 
+      email: 'ana.ruth@next.com', 
+      password: 'next2025', 
+      role: 'sublider', 
+      initials: 'AR'
+    },
+    {
+      id: 'usr_13', 
+      name: 'Lucas Almeida', 
+      email: 'lucas@next.com', 
+      password: 'next2025', 
+      role: 'jovem', 
+      initials: 'LA', 
+      hasServo: true, 
+      servoType: ["Servo"], 
+      age: 16
+    },
+    {
+      id: 'usr_14', 
+      name: 'Camila Oliveira', 
+      email: 'camila@next.com', 
+      password: 'next2025', 
+      role: 'jovem', 
+      initials: 'CO', 
+      hasServo: true, 
+      servoType: ["Midia"], 
+      age: 17
+    },
+    {
+      id: 'usr_15', 
+      name: 'Samuel Ribeiro', 
+      email: 'samuel@next.com', 
+      password: 'next2025', 
       role: 'jovem',
-      initials: 'JV',
-      hasServo: false,
-      age: 16,
-      phone: '',
-      responsible: 'Ana Costa',
+      initials: 'SR'
     },
-    {
-      id: 'usr_8',
-      name: 'Maria Santos',
-      email: 'maria@next.com',
-      password: 'next2025',
-      role: 'jovem',
-      initials: 'MS',
-      hasServo: true,
-      age: 15,
+    { 
+      id: 'usr_18', 
+      name: 'Gabriel Mendes', 
+      email: 'gabriel@next.com', 
+      password: 'next2025', 
+      role: 'jovem', 
+      initials: 'GM', 
+      hasServo: true, 
+      servoType: ["Servo", "Midia", "Intercessao"], 
+      age: 21
     },
-    {
-      id: 'usr_9',
-      name: 'Pedro Lima',
-      email: 'pedro@next.com',
-      password: 'next2025',
-      role: 'jovem',
-      initials: 'PL',
-      hasServo: false,
-      age: 17,
-    },
-    {
-      id: 'usr_10',
-      name: 'Beatriz Rocha',
-      email: 'bia@next.com',
-      password: 'next2025',
-      role: 'jovem',
-      initials: 'BR',
-      hasServo: false,
-      age: 14,
-    },
-    {
-      id: 'usr_11',
-      name: 'Ana Costa',
-      email: 'responsavel@next.com',
-      password: 'next2025',
-      role: 'responsavel',
-      initials: 'AC',
-      childName: 'João Victor',
-    },
-    {
-      id: 'usr_12',
-      name: 'Ana Ruth',
-      email: 'ana.ruth@next.com',
-      password: 'next2025',
-      role: 'sublider',
-      hasServo: true,
-      servoType: ["Servo", "Intercessao"],
-      initials: 'AR',
-    },
-    // --- NOVOS JOVENS ESCALADOS ---
-    {
-      id: 'usr_13',
-      name: 'Lucas Almeida',
-      email: 'lucas@next.com',
-      password: 'next2025',
-      role: 'jovem',
-      initials: 'LA',
-      hasServo: true,
-      servoType: ["Servo"],
-      age: 15,
-    },
-    {
-      id: 'usr_14',
-      name: 'Camila Oliveira',
-      email: 'camila@next.com',
-      password: 'next2025',
-      role: 'jovem',
-      initials: 'CO',
-      hasServo: true,
-      servoType: ["Servo", "Midia"],
-      age: 17,
-    },
-    {
-      id: 'usr_15',
-      name: 'Samuel Ribeiro',
-      email: 'samuel@next.com',
-      password: 'next2025',
-      role: 'jovem',
-      initials: 'SR',
-      hasServo: true,
-      servoType: ["Servo", "Intercessao"],
-      age: 14,
-    },
-    {
-      id: 'usr_16',
-      name: 'Felipe Costa',
-      email: 'felipe@next.com',
-      password: 'next2025',
-      role: 'jovem',
-      initials: 'FC',
-      hasServo: true,
-      servoType: ["Servo", "Midia"],
-      age: 15,
-    },
-    {
-      id: 'usr_17',
-      name: 'Amanda Lima',
-      email: 'amanda@next.com',
-      password: 'next2025',
-      role: 'jovem',
-      initials: 'AL',
-      hasServo: true,
-      servoType: ["Servo", "Intercessao"],
-      age: 14,
-    },
-    {
-      id: 'usr_18',
-      name: 'Gabriel Mendes',
-      email: 'gabriel@next.com',
-      password: 'next2025',
-      role: 'jovem',
-      initials: 'GM',
-      hasServo: true,
-      servoType: ["Servo", "Midia", "Intercessao"],
-      age: 17,
-    },
-    {
-      id: 'usr_19',
-      name: 'Letícia Souza',
-      email: 'leticia@next.com',
-      password: 'next2025',
-      role: 'jovem',
-      initials: 'LS',
-      hasServo: true,
-      servoType: ["Servo", "Midia", "Intercessao"],
-      age: 16,
+    { 
+      id: 'usr_19', 
+      name: 'Letícia Souza', 
+      email: 'leticia@next.com', 
+      password: 'next2025', 
+      role: 'jovem', 
+      initials: 'LS', 
+      hasServo: true, 
+      servoType: ["Midia", "Intercessao"], 
+      age: 16 
     }
   ];
 
@@ -285,7 +258,7 @@ const NextAuth = (() => {
   async function resetPassword(email) {
     // Força a utilização do cliente Supabase real apenas para disparar o e-mail
     const client = window.originalSupabaseClient || supabaseClient;
-    
+
     if (!client) {
       console.error("Supabase não está ligado.");
       return false;
@@ -300,7 +273,7 @@ const NextAuth = (() => {
       console.error("Erro ao enviar e-mail:", error.message);
       return false;
     }
-    
+
     return true;
   }
 
@@ -364,7 +337,7 @@ const NextDB = (() => {
 
     // 2. Envia para o Supabase (Incluindo Grupos, Eventos e Escalas)
     const cloudTables = ['next_messages', 'next_prayers', 'next_group_messages', 'next_events', 'next_scales', 'next_applications', 'next_products', 'next_posts'];
-    
+
     if (supabaseClient && cloudTables.includes(collection)) {
       const { error } = await supabaseClient.from(collection).upsert(item);
       if (error) console.error(`🚨 Erro ao enviar para ${collection}:`, error.message);
@@ -397,7 +370,7 @@ const NextDB = (() => {
   async function syncFromCloud() {
     if (!supabaseClient) return;
     const cloudTables = ['next_messages', 'next_prayers', 'next_group_messages', 'next_events', 'next_scales', 'next_posts'];
-    
+
     for (const table of cloudTables) {
       const { data, error } = await supabaseClient.from(table).select('*');
       if (data && !error) {
