@@ -239,7 +239,7 @@ const NextAuth = (() => {
     },
     {
       id: 'usr_19',
-      name: 'Letícia Souza (Mídia e Intercessão)',
+      name: 'Letícia Souza',
       email: 'leticia@next.com',
       password: 'next2025',
       role: 'jovem',
@@ -360,8 +360,7 @@ const NextDB = (() => {
     }
     localStorage.setItem(collection, JSON.stringify(items));
 
-    // 2. Envia para o Supabase
-    // Lista de todas as tabelas que devem ser sincronizadas na nuvem
+    // 2. Envia para o Supabase (Incluindo Grupos, Eventos e Escalas)
     const cloudTables = ['next_messages', 'next_prayers', 'next_group_messages', 'next_events', 'next_scales', 'next_applications', 'next_products', 'next_posts'];
     
     if (supabaseClient && cloudTables.includes(collection)) {
@@ -392,7 +391,7 @@ const NextDB = (() => {
     localStorage.setItem(key, JSON.stringify(value));
   }
 
-  // 3. Puxa os dados atualizados com garantia de reescrita
+  // 3. Puxa TODOS os dados atualizados com garantia de reescrita
   async function syncFromCloud() {
     if (!supabaseClient) return;
     const cloudTables = ['next_messages', 'next_prayers', 'next_group_messages', 'next_events', 'next_scales', 'next_posts'];

@@ -33,8 +33,8 @@ const permissionsByRole = {
   responsavel: ["home", "agenda", "culto", "configuracoes"],
   lider: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "configuracoes"],
   sublider: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "escalas", "gestao", "configuracoes"],
-  pastor: ["home", "agenda", "culto", "conteudo", "loja", "oracao", "conversa", "mensagens", "gestao", "configuracoes", "servos"],
-  missionaria: ["home", "agenda", "culto", "conteudo", "loja", "oracao", "conversa", "mensagens", "gestao", "configuracoes", "servos"],
+  pastor: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "configuracoes"],
+  missionaria: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "configuracoes"],
   admin: ["home", "agenda", "culto", "conteudo", "loja", "gestao", "configuracoes", "servos"],
 };
 
@@ -1840,13 +1840,36 @@ async function boot() {
 
     // Cria o "Efeito WhatsApp": Atualiza o chat a cada 3 segundos se a pessoa estiver na aba
     setInterval(async () => {
-      await NextDB.syncFromCloud();
+      if (typeof NextDB.syncFromCloud === 'function') {
+        await NextDB.syncFromCloud();
+      }
+      
+      // 1. Se estiver no Início, atualiza avisos e andamento do culto
+      if (document.querySelector("#home").classList.contains("active")) {
+        renderFeed();
+        renderCultStatus();
+      }
+      // 2. Se estiver na Agenda, atualiza o calendário e lista de eventos
+      if (document.querySelector("#agenda").classList.contains("active")) {
+        renderCalendar();
+      }
+      // 3. Se estiver no Chat Privado com Líder
       if (document.querySelector("#conversa").classList.contains("active")) {
         renderYoungChat();
       }
+      // 4. Se for líder na Caixa de Entrada de Mensagens
       if (document.querySelector("#mensagens").classList.contains("active")) {
         renderLeaderInbox();
       }
+      // 5. Se estiver nos Grupos de Equipe (Servos, Mídia, Intercessão)
+      if (document.querySelector("#grupos") && document.querySelector("#grupos").classList.contains("active")) {
+        if (typeof renderGroupChat === 'function') renderGroupChat();
+      }
+      // 6. Se estiver na aba Servos vendo as próprias escalas
+      if (document.querySelector("#servos") && document.querySelector("#servos").classList.contains("active")) {
+        if (typeof renderMyScales === 'function') renderMyScales();
+      }
+      // 7. Se for administrador na aba de Gestão
       if (document.querySelector("#gestao").classList.contains("active") && typeof renderPrayerAdminList === 'function') {
         renderPrayerAdminList();
       }
