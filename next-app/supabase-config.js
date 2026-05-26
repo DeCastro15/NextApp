@@ -360,14 +360,13 @@ const NextDB = (() => {
     }
     localStorage.setItem(collection, JSON.stringify(items));
 
-    // 2. Envia para o Supabase com captura de erros
-    if (supabaseClient && (collection === 'next_messages' || collection === 'next_prayers')) {
+    // 2. Envia para o Supabase
+    // Lista de todas as tabelas que devem ser sincronizadas na nuvem
+    const cloudTables = ['next_messages', 'next_prayers', 'next_group_messages', 'next_events', 'next_scales', 'next_applications', 'next_products', 'next_posts'];
+    
+    if (supabaseClient && cloudTables.includes(collection)) {
       const { error } = await supabaseClient.from(collection).upsert(item);
-      if (error) {
-        console.error(`🚨 Erro ao enviar para ${collection}:`, error.message);
-      } else {
-        console.log(`✅ Mensagem enviada para a nuvem:`, collection);
-      }
+      if (error) console.error(`🚨 Erro ao enviar para ${collection}:`, error.message);
     }
     return item;
   }
@@ -396,16 +395,11 @@ const NextDB = (() => {
   // 3. Puxa os dados atualizados com garantia de reescrita
   async function syncFromCloud() {
     if (!supabaseClient) return;
-    const tables = ['next_messages', 'next_prayers', 'next_group_messages'];
+    const cloudTables = ['next_messages', 'next_prayers', 'next_group_messages', 'next_events', 'next_scales', 'next_posts'];
     
-    for (const table of tables) {
+    for (const table of cloudTables) {
       const { data, error } = await supabaseClient.from(table).select('*');
-      if (error) {
-        console.error(`🚨 Erro ao puxar dados da tabela ${table}:`, error.message);
-        continue;
-      }
-      if (data) {
-        // Agora atualiza SEMPRE a memória local com a verdade da nuvem
+      if (data && !error) {
         localStorage.setItem(table, JSON.stringify(data));
       }
     }
