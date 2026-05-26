@@ -1358,6 +1358,8 @@ function renderDynamicScaleFields() {
 
 function renderMyScales() {
   const container = document.querySelector("#myActiveScales");
+  const geralContainer = document.querySelector("#escalaGeralContainer");
+  
   if (!container) return;
 
   const scales = getAll("next_scales", []);
@@ -1366,32 +1368,100 @@ function renderMyScales() {
   
   let visibleScales = scales;
   if (!isLeader) {
-    // Isola a visualização: O jovem só vê as escalas dos setores que ele faz parte
     const myDepts = currentUser.servoType || ["Servo"];
     visibleScales = scales.filter(scale => myDepts.includes(scale.dept));
   }
 
-  const htmlContent = visibleScales.map(scale => {
-    const ev = events.find(e => e.id === scale.eventId);
-    if (!ev) return "";
+  let myCardsHtml = "";
+  let geralHtml = "";
 
+  const activeScales = visibleScales.filter(scale => {
+    const ev = events.find(e => e.id === scale.eventId);
+    if (!ev) return false;
     const userAssignment = scale.assignments.find(a => a.userId === currentUser.id);
-    if (isLeader || userAssignment) {
-      return `
-        <article class="feed-card" style="grid-template-columns: 1fr; gap: 10px; background: var(--surface);">
-          <span class="feed-tag" style="background: var(--blue); color: #fff; width: fit-content; padding: 2px 8px;">Equipe ${scale.dept}</span>
-          <h3 style="margin: 4px 0;">${ev.title} — Dia ${ev.date} às ${ev.time}</h3>
-          <p style="margin: 0; font-size: 0.95rem;">Sua Atribuição: <strong style="color: #10b981;">${userAssignment ? userAssignment.functionName : "Coordenador Geral"}</strong></p>
-          <div style="font-size: 0.85rem; padding-top: 8px; border-top: 1px dashed var(--line); margin-top: 4px; color: var(--muted);">
-            ${scale.assignments.map(a => `· <strong>${a.functionName}:</strong> ${a.userName}`).join("<br>")}
+    return isLeader || userAssignment;
+  });
+
+  if (activeScales.length === 0) {
+    container.innerHTML = `<p class="safety-note">Nenhuma designação oficial encontrada para o seu perfil neste mês.</p>`;
+    if (geralContainer) geralContainer.innerHTML = "";
+    return;
+  }
+
+  activeScales.forEach(scale => {
+    const ev = events.find(e => e.id === scale.eventId);
+    const userAssignment = scale.assignments.find(a => a.userId === currentUser.id);
+
+    // 1. Renderiza o Card de Resumo Individual
+    myCardsHtml += `
+      <article class="feed-card" style="grid-template-columns: 1fr; gap: 10px; background: var(--surface);">
+        <span class="feed-tag" style="background: var(--blue); color: #fff; width: fit-content; padding: 2px 8px;">Equipe ${scale.dept}</span>
+        <h3 style="margin: 4px 0;">${ev.title} — Dia ${ev.date} às ${ev.time}</h3>
+        <p style="margin: 0; font-size: 0.95rem;">Sua Atribuição: <strong style="color: #10b981;">${userAssignment ? userAssignment.functionName : "Coordenador Geral"}</strong></p>
+      </article>
+    `;
+
+    // 2. Renderiza a Planilha Visual se for escala dos Servos
+    if (scale.dept === "Servo") {
+      const grouped = {};
+      scale.assignments.forEach(a => {
+        if (!grouped[a.functionName]) grouped[a.functionName] = [];
+        grouped[a.functionName].push(a.userName);
+      });
+
+      // Motor que cria as colunas e os nomes
+      const renderGroup = (roles) => {
+        return roles.map(r => {
+          if (!r) return `<div class="escala-col empty-col"></div>`; // Quadrado vazio para preencher tabela
+          const names = grouped[r] || ["-"];
+          return `
+            <div class="escala-col">
+              <div class="escala-role">${r}</div>
+              <div class="escala-names">${names.map(n => `<span>${n}</span>`).join("")}</div>
+            </div>
+          `;
+        }).join("");
+      };
+
+      // Divide as funções exatas em linhas de 3 colunas (como no seu Excel)
+      const block1 = ["Porta", "Recepção", "Integração"];
+      const block2 = ["Manutenção", "Suporte", "Ofertório"];
+      const block3 = ["Sub Coordenador", "Coordenador", ""]; // O vazio no final mantém o alinhamento da tabela perfeito
+
+      geralHtml += `
+        <div class="escala-table-wrapper">
+          <div class="escala-header-main">NEXT - ${ev.date}/${ev.month.substring(0,3)}/2026</div>
+          
+          <div class="escala-grid-row">
+            ${renderGroup(block1)}
           </div>
-        </article>
+          <div class="escala-grid-row">
+            ${renderGroup(block2)}
+          </div>
+          <div class="escala-grid-row">
+            ${renderGroup(block3)}
+          </div>
+
+          <div class="escala-footer-main">
+            EM CASO DE ATRASO E/OU DÚVIDA SOBRE O SETOR, AVISAR AO COORDENADOR DO DIA! CHEGAR 30 MIN ANTES PARA ORAÇÃO!
+          </div>
+        </div>
       `;
     }
-    return "";
-  }).join("");
+  });
 
-  container.innerHTML = htmlContent || `<p class="safety-note">Nenhuma designação oficial encontrada para o seu perfil neste mês.</p>`;
+  container.innerHTML = myCardsHtml;
+  if (geralContainer) {
+    geralContainer.innerHTML = geralHtml ? `
+      <div class="section-head" style="margin-top: 24px;">
+        <div>
+          <p class="eyebrow">Visão Geral da Equipe</p>
+          <h2>Quadro de Escala</h2>
+        </div>
+      </div>
+      ${geralHtml}
+    ` : "";
+  }
 }
 
 function bindEvents() {
@@ -1537,27 +1607,31 @@ function bindEvents() {
     });
   }
 
-  // --- LÓGICA DO MODO ESCURO (COM SWITCH) ---
-  const themeBtn = document.querySelector("#themeToggleBtn");
+  // --- MODO ESCURO ---
+  const themeBtn  = document.querySelector("#themeToggleBtn");
   const themeText = document.querySelector("#themeToggleText");
-  
-  function applyTheme(dark){
+
+  function applyTheme(dark) {
     document.body.classList.toggle("dark-mode", dark);
-    if (themeBtn)  themeBtn.setAttribute("aria-checked", dark ? "true" : "false");
-    if (themeText) themeText.textContent = dark ? "☀️ Claro" : "🌙 Escuro";
+    if (themeBtn) {
+      themeBtn.setAttribute("aria-checked", dark ? "true" : "false");
+    }
+    if (themeText) {
+      themeText.textContent = dark ? "☀️ Claro" : "🌙 Escuro";
+    }
     localStorage.setItem("next_theme", dark ? "dark" : "light");
   }
 
-  // Carrega preferência salva
+  // Carrega preferência salva ao abrir a página
   applyTheme(localStorage.getItem("next_theme") === "dark");
-      
-  if(themeBtn) {
+
+  if (themeBtn) {
     themeBtn.addEventListener("click", () => {
       const isDark = themeBtn.getAttribute("aria-checked") !== "true";
       applyTheme(isDark);
     });
   }
-
+  
   // Leitor de Imagem para a Lojinha
   const shopImageInput = document.querySelector("#shopProductImage");
   if (shopImageInput) {

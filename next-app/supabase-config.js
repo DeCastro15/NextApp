@@ -168,6 +168,8 @@ const NextAuth = (() => {
       email: 'ana.ruth@next.com',
       password: 'next2025',
       role: 'sublider',
+      hasServo: true,
+      servoType: ["Servo", "Intercessao"],
       initials: 'AR',
     },
     // --- NOVOS JOVENS ESCALADOS ---
