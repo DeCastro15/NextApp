@@ -17,7 +17,7 @@ const SUPABASE_CONFIG = {
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzcWRzZnJ4eHlnaXlkbm9lb2pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzQ1MTcsImV4cCI6MjA5NTE1MDUxN30.vsXLMKQpI0lD-hkN-ohXVHAdxOzvFmkd_yjVsH7n4p4',
 };
 
-const USE_MOCK_DB = false; // Mude para false só quando o banco estiver pronto
+const USE_MOCK_DB = true; // Mude para false só quando o banco estiver pronto
 
 // ---------------------------------------------------------------------------
 // NextAuth — autenticação (mock ou Supabase)
