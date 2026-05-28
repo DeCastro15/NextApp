@@ -51,56 +51,34 @@ const defaultPosts = [
   { id: "p4", tag: "Servir", title: "Inscricoes para apoio", text: "Fale com um lider se quiser ajudar na recepcao.", time: "2d" },
 ];
 
-const defaultEvents = [
-  {
-    id: "e1",
-    date: "23",
-    month: "Maio",
-    weekDay: "Sabado",
-    time: "19h30",
-    title: "Culto Next",
-    text: "Louvor, palavra e comunhao.",
-    detail: "Encontro principal da juventude com louvor, palavra e comunhao.",
-    location: "AD Fonte de Vida",
-    audience: "geral",
-  },
-  {
-    id: "e2",
-    date: "25",
-    month: "Maio",
-    weekDay: "Segunda",
-    time: "20h00",
-    title: "Plano de leitura em grupo",
-    text: "Inicio do plano de 7 dias no app.",
-    detail: "Comeco do plano devocional da semana, para acompanhar em casa.",
-    location: "Online",
-    audience: "jovens",
-  },
-  {
-    id: "e3",
-    date: "29",
-    month: "Maio",
-    weekDay: "Sexta",
-    time: "20h00",
-    title: "Reuniao com responsaveis",
-    text: "Alinhamento com lideres e pais.",
-    detail: "Conversa rapida com os responsaveis sobre novidades e proximos encontros.",
-    location: "AD Fonte de Vida",
-    audience: "responsaveis",
-  },
-  {
-    id: "e4",
-    date: "31",
-    month: "Maio",
-    weekDay: "Domingo",
-    time: "18h30",
-    title: "Noite do amigo",
-    text: "Evento geral da juventude.",
-    detail: "Dia para trazer um amigo e participar com a galera do Next.",
-    location: "AD Fonte de Vida",
-    audience: "geral",
-  },
-];
+function buildDefaultEvents() {
+  const now = new Date();
+  const yr = now.getFullYear();
+  const mo = now.getMonth();
+
+  function nextWeekday(targetDay) {
+    const today = new Date(yr, mo, now.getDate());
+    let diff = (targetDay - today.getDay() + 7) % 7 || 7;
+    const d = new Date(yr, mo, now.getDate() + diff);
+    if (d.getMonth() !== mo) return null;
+    return d;
+  }
+
+  function fmt(d) { return { date: String(d.getDate()), month: d.toLocaleDateString('pt-BR', { month: 'long' }), weekDay: d.toLocaleDateString('pt-BR', { weekday: 'long' }) }; }
+
+  const sab = nextWeekday(6);
+  const seg = nextWeekday(1);
+  const sex = nextWeekday(5);
+  const dom = nextWeekday(0);
+
+  return [
+    sab && { id: 'e1', ...fmt(sab), time: '19h30', title: 'Culto Next', text: 'Louvor, palavra e comunhão.', detail: 'Encontro principal da juventude.', location: 'AD Fonte de Vida', audience: 'geral' },
+    seg && { id: 'e2', ...fmt(seg), time: '20h00', title: 'Plano de leitura em grupo', text: 'Início do plano de 7 dias.', detail: 'Plano devocional da semana.', location: 'Online', audience: 'jovens' },
+    sex && { id: 'e3', ...fmt(sex), time: '20h00', title: 'Reunião com responsáveis', text: 'Alinhamento com líderes e pais.', detail: 'Novidades e próximos encontros.', location: 'AD Fonte de Vida', audience: 'responsaveis' },
+    dom && { id: 'e4', ...fmt(dom), time: '18h30', title: 'Noite do Amigo', text: 'Evento geral da juventude.', detail: 'Traga um amigo!', location: 'AD Fonte de Vida', audience: 'geral' },
+  ].filter(Boolean);
+}
+const defaultEvents = buildDefaultEvents();
 
 const playlists = [
   { title: "Louvor Next", text: "Setlist para chegar no culto cantando junto.", progress: 76 },
@@ -1064,7 +1042,17 @@ function getBaseProfile() {
 
 function getProfileFromStorage() {
   try {
-    return { ...getBaseProfile(), ...(JSON.parse(localStorage.getItem(profileStorageKey)) || {}) };
+    const localProfile = JSON.parse(localStorage.getItem(profileStorageKey)) || {};
+    // Se tiver foto/nome no currentUser (vindos do Supabase no login), usa também
+    const fromSession = {
+      name: currentUser.name || "",
+      photo: currentUser.photo || "",
+      age: currentUser.age || "",
+      phone: currentUser.phone || "",
+      birthday: currentUser.birthday || "",
+      responsible: currentUser.responsible || "",
+    };
+    return { ...getBaseProfile(), ...fromSession, ...localProfile };
   } catch {
     return getBaseProfile();
   }
@@ -1151,10 +1139,29 @@ function saveProfile(event) {
 
   localStorage.setItem(profileStorageKey, JSON.stringify(profile));
   authApi?.updateSession(profile);
-  saveItem("next_users", { ...(dbApi?.getOne("next_users", currentUser.id) || currentUser), ...profile });
+  localStorage.setItem(profileStorageKey, JSON.stringify(profile));
+  authApi?.updateSession(profile);
+
+  // Salva no banco (local + nuvem via NextDB.save)
+  const existingUser = dbApi?.getOne("next_users", currentUser.id) || currentUser;
+  const updatedUser = { ...existingUser, ...profile, id: currentUser.id };
+  saveItem("next_users", updatedUser);
+
+  // Se Supabase estiver ativo, persiste foto e nome na nuvem
+  if (typeof supabaseClient !== 'undefined' && supabaseClient && !USE_MOCK_DB) {
+    supabaseClient
+      .from('next_users')
+      .upsert({ id: currentUser.id, name: profile.name, photo: profile.photo, phone: profile.phone, age: profile.age, birthday: profile.birthday })
+      .then(({ error }) => {
+        if (error) console.error('Erro ao salvar perfil na nuvem:', error.message);
+      });
+  }
+
   applyProfile(profile);
-  document.querySelector("#profileMessage").textContent = "Perfil salvo neste navegador.";
-}
+  document.querySelector("#profileMessage").textContent =
+    USE_MOCK_DB ? "Perfil salvo neste navegador." : "Perfil salvo na nuvem! ✓";
+  }
+
 
 function renderEventAudienceOptions() {
   const options = [
@@ -1201,23 +1208,52 @@ function giveServoRole(event) {
 }
 
 function renderPrayerAdminList() {
-  const prayers = getPrayers().slice(0, 8);
+  const prayers = getPrayers().slice(0, 20);
   const list = document.querySelector("#prayerAdminList");
   if (!list) return;
-  list.innerHTML = prayers.length
-    ? prayers
-        .map((prayer) => {
-          const name = prayer.anonymous && !canManageAll() ? "Anonimo" : prayer.senderName;
-          return `
-            <article class="admin-list-item">
-              <strong>${name}</strong>
-              <p>${prayer.text}</p>
-              <span class="small-badge">${prayer.wantsReply ? "Quer resposta" : "Sem resposta"}</span>
-            </article>
-          `;
-        })
-        .join("")
-    : `<p class="safety-note">Nenhum pedido de oracao recebido ainda.</p>`;
+
+  if (!prayers.length) {
+    list.innerHTML = `<p class="safety-note">Nenhum pedido de oração recebido ainda.</p>`;
+    return;
+  }
+
+  list.innerHTML = prayers.map((prayer) => {
+    const displayName = prayer.anonymous && !canManageAll() ? "Anônimo" : prayer.senderName;
+    const hasReply = prayer.reply;
+    const canReply = canManage() && prayer.wantsReply;
+
+    return `
+      <article class="admin-list-item" style="gap: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: start; gap: 8px;">
+          <strong>${displayName}</strong>
+          <span class="small-badge">${prayer.wantsReply ? "Quer resposta" : "Sem resposta"}</span>
+        </div>
+        <p>${prayer.text}</p>
+        ${hasReply ? `
+          <div style="background: rgba(47,115,248,0.07); border-left: 3px solid var(--blue); padding: 8px 12px; border-radius: 0 6px 6px 0; margin-top: 4px;">
+            <span class="eyebrow" style="color: var(--blue);">Resposta da liderança</span>
+            <p style="margin: 4px 0 0; font-size: 0.9rem;">${prayer.reply}</p>
+          </div>
+        ` : ""}
+        ${canReply ? `
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <input type="text"
+              id="reply-${prayer.id}"
+              placeholder="Escreva uma resposta..."
+              style="flex: 1; min-height: 40px; font-size: 0.88rem; padding: 8px 10px;"
+            />
+            <button
+              class="primary-button compact"
+              type="button"
+              data-reply-prayer="${prayer.id}"
+              style="min-height: 40px; padding: 0 14px; font-size: 0.85rem;">
+              Responder
+            </button>
+          </div>
+        ` : ""}
+      </article>
+    `;
+  }).join("");
 }
 
 function renderApplicationsList() {
@@ -1336,9 +1372,43 @@ function savePrayer(event) {
     createdAt: Date.now(),
   });
 
-  document.querySelector("#prayerMessage").textContent = "Pedido enviado para a lideranca.";
+  document.querySelector("#prayerMessage").textContent = "Pedido enviado para a liderança! 🙏";
   form.reset();
+  renderMyPrayers();
   renderPrayerAdminList();
+}
+
+function renderMyPrayers() {
+  const container = document.querySelector("#myPrayersList");
+  if (!container) return;
+
+  const myPrayers = getPrayers()
+    .filter(p => p.senderId === currentUser.id)
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 5);
+
+  if (!myPrayers.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML = myPrayers.map(prayer => {
+    const replyHtml = prayer.reply ? `
+      <div style="background: rgba(47,115,248,0.07); border-left: 3px solid var(--blue); padding: 8px 12px; border-radius: 0 6px 6px 0; margin-top: 8px;">
+        <span class="eyebrow" style="color: var(--blue); font-size: 0.7rem;">Resposta da liderança</span>
+        <p style="margin: 4px 0 0; font-size: 0.9rem; font-weight: 700; color: var(--ink);">${prayer.reply}</p>
+        <span style="font-size: 0.75rem; color: var(--muted);">— ${prayer.repliedBy || "Liderança"}</span>
+      </div>
+    ` : (prayer.wantsReply ? `<p style="font-size: 0.82rem; color: var(--muted); margin-top: 6px; font-style: italic;">Aguardando resposta da liderança...</p>` : "");
+
+    return `
+      <article style="border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--surface);">
+        <p style="margin: 0 0 6px; font-size: 0.9rem;">${prayer.text}</p>
+        <span class="small-badge" style="font-size: 0.72rem;">${prayer.anonymous ? "Anônimo" : "Identificado"}</span>
+        ${replyHtml}
+      </article>
+    `;
+  }).join("");
 }
 
 function populateScaleEvents() {
@@ -1948,6 +2018,28 @@ function bindEvents() {
 
   const servoForm = document.querySelector("#servoForm");
   if (servoForm) servoForm.addEventListener("submit", giveServoRole);
+
+  // Resposta ao pedido de oração
+  const prayerAdminList = document.querySelector("#prayerAdminList");
+  if (prayerAdminList) {
+    prayerAdminList.addEventListener("click", (event) => {
+      const btn = event.target.closest("[data-reply-prayer]");
+      if (!btn) return;
+      const prayerId = btn.dataset.replyPrayer;
+      const input = document.querySelector(`#reply-${prayerId}`);
+      const replyText = input?.value?.trim();
+      if (!replyText) return;
+
+      const prayers = getAll("next_prayers", []);
+      const prayer = prayers.find(p => p.id === prayerId);
+      if (!prayer) return;
+
+      saveItem("next_prayers", { ...prayer, reply: replyText, repliedBy: currentUser.name, repliedAt: Date.now() });
+
+      input.value = "";
+      renderPrayerAdminList();
+    });
+  }
 }
 
 async function boot() {
@@ -1963,6 +2055,7 @@ async function boot() {
   renderContentCards("#playlists", playlists);
   renderContentCards("#planos", planos);
   renderShop();
+  renderMyPrayers();
   renderCultStatus();
   renderChatContacts();
   renderYoungChat();
@@ -1973,41 +2066,51 @@ async function boot() {
   fillProfileForm(getProfileFromStorage());
   setView(views.find((view) => view.classList.contains("active") && canView(view.id))?.id || allowedViews()[0]);
 
-  if (typeof NextDB !== "undefined" && typeof NextDB.syncFromCloud === 'function') {
-    await NextDB.syncFromCloud();
-    renderYoungChat();
-    renderLeaderInbox();
-    if (typeof renderPrayerAdminList === 'function') renderPrayerAdminList();
+  // Realtime Supabase — escuta mudanças em tempo real
+    if (supabaseClient) {
+      const realtimeTables = ['next_messages', 'next_group_messages', 'next_prayers',
+                              'next_events', 'next_posts', 'next_scales'];
 
-    setInterval(async () => {
-      if (typeof NextDB.syncFromCloud === 'function') {
-        await NextDB.syncFromCloud();
-      }
-      
-      if (document.querySelector("#home")?.classList.contains("active")) {
-        renderFeed();
-        renderCultStatus();
-      }
-      if (document.querySelector("#agenda")?.classList.contains("active")) {
-        renderCalendar();
-      }
-      if (document.querySelector("#conversa")?.classList.contains("active")) {
-        renderYoungChat();
-      }
-      if (document.querySelector("#mensagens")?.classList.contains("active")) {
-        renderLeaderInbox();
-      }
-      if (document.querySelector("#grupos")?.classList.contains("active")) {
-        if (typeof renderGroupChat === 'function') renderGroupChat();
-      }
-      if (document.querySelector("#servos")?.classList.contains("active")) {
-        if (typeof renderMyScales === 'function') renderMyScales();
-      }
-      if (document.querySelector("#gestao")?.classList.contains("active") && typeof renderPrayerAdminList === 'function') {
-        renderPrayerAdminList();
-      }
-    }, 3000);
-  }
+      realtimeTables.forEach(table => {
+        supabaseClient
+          .channel(`realtime:${table}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table }, async () => {
+            // Sincroniza só a tabela que mudou
+            const { data, error } = await supabaseClient
+              .from(table)
+              .select('*')
+              .order('createdAt', { ascending: true });
+
+            if (data && !error) {
+              localStorage.setItem(table, JSON.stringify(data));
+            }
+
+            // Re-renderiza a view correspondente
+            const active = document.querySelector('.view.active');
+            if (!active) return;
+
+            if (table === 'next_messages' && active.id === 'conversa') renderYoungChat();
+            if (table === 'next_messages' && active.id === 'mensagens') renderLeaderInbox();
+            if (table === 'next_group_messages' && active.id === 'grupos') renderGroupChat();
+            if (table === 'next_prayers' && active.id === 'gestao') renderPrayerAdminList();
+            if (table === 'next_events' && active.id === 'agenda') renderCalendar();
+            if (table === 'next_posts' && active.id === 'home') renderFeed();
+            if (table === 'next_scales' && active.id === 'servos') renderMyScales();
+          })
+          .subscribe();
+      });
+    } else {
+      // Fallback: polling leve (15s) quando Supabase não está conectado (modo mock)
+      setInterval(() => {
+        const active = document.querySelector('.view.active');
+        if (!active) return;
+        if (active.id === 'conversa') renderYoungChat();
+        if (active.id === 'mensagens') renderLeaderInbox();
+        if (active.id === 'grupos') renderGroupChat();
+        if (active.id === 'home') { renderFeed(); renderCultStatus(); }
+        if (active.id === 'agenda') renderCalendar();
+      }, 15000);
+    }
 }
 
 boot();

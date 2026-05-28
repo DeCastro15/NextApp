@@ -1282,6 +1282,10 @@ select:focus {
   .servant-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  #shopAdminPanel .field-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .timeline-step {
@@ -1469,6 +1473,33 @@ select:focus {
     color: var(--muted);
     transition: all 300ms ease;
     z-index: 2; /* Garante que o ícone fique por cima da linha */
+
+     /* Loja admin: formulário em coluna única no celular */
+    #shopAdminPanel .field-grid{
+      grid-template-columns: 1fr;
+    }
+
+    #shopAdminPanel form {
+      padding: 14px;
+    }
+
+    /* Botões Editar/Remover empilham no card */
+    .shop-card [style*="display: flex"] {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .shop-card [data-edit-product],
+    .shop-card [data-delete-product] {
+      flex: 1;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    /* Grid da loja em 1 coluna no mobile */
+    .shop-grid {
+      grid-template-columns: 1fr !important;
+    }
 }
 
   .timeline-step.done {
@@ -2132,5 +2163,116 @@ body.dark-mode input[readonly] {
   body.dark-mode .file-name-display {
     color: #9ca3af;
   }
+
+  /* ============================================================
+   MOBILE TOTAL — melhorias gerais para celular
+   ============================================================ */
+
+@media (max-width: 640px) {
+
+  /* Topbar mais compacta */
+  .topbar h1 {
+    font-size: 1.35rem;
+  }
+
+  /* Chat: janela maior em telas pequenas */
+  .chat-window {
+    height: 52vh;
+    min-height: 240px;
+  }
+
+  /* Chat layout: empilha lista de contatos e janela */
+  .chat-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .leader-panel {
+    max-height: 220px;
+    overflow-y: auto;
+    border-bottom: 1px solid var(--line);
+    border-radius: 8px 8px 0 0;
+  }
+
+  .chat-panel {
+    border-radius: 0 0 8px 8px;
+  }
+
+  /* Settings: empilha preview e form */
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-preview {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+    display: flex;
+    padding: 14px;
+  }
+
+  .settings-avatar {
+    width: 72px;
+    height: 72px;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  /* Panel forms com padding menor */
+  .panel-form {
+    padding: 14px;
+  }
+
+  /* Admin grid em coluna única */
+  .admin-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Hero panel mais alto para texto não sumir */
+  .hero-panel {
+    min-height: 200px;
+    grid-template-columns: 1fr;
+  }
+
+  .cult-card {
+    display: none; /* esconde o card de status no hero em mobile, já tem a view dedicada */
+  }
+
+  /* Botões no rodapé fixo dos formulários */
+  .primary-button, .ghost-button {
+    min-height: 52px; /* Área de toque maior no mobile */
+  }
+
+  /* Agenda detail dentro do fluxo, não ao lado */
+  .agenda-detail {
+    margin-top: 12px;
+  }
+
+  /* Evita conteúdo cortado nos cards de shop */
+  .shop-card {
+    min-height: unset;
+  }
+
+  /* Textarea não cresce além da tela */
+  textarea {
+    max-height: 180px;
+  }
+
+  /* Formulário de criação de evento e escala */
+  #dynamicFunctionsContainer {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Telas muito pequenas (< 360px) */
+@media (max-width: 360px) {
+  .main-area {
+    padding: 10px;
+  }
+  .topbar h1 {
+    font-size: 1.1rem;
+  }
+}
 
 }
