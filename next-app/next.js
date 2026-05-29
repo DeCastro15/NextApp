@@ -398,13 +398,15 @@ function renderCalendar() {
         .join("")
     : `<article class="agenda-detail"><h3>Nenhum evento para seu perfil</h3><p>Quando a liderança adicionar algo, aparece aqui.</p></article>`;
 
+  _lastFilteredEvents = events;
   renderAgendaDetail(events.length ? 0 : -1);
 }
 
+let _lastFilteredEvents = [];
+
 function renderAgendaDetail(index) {
   const detail = document.querySelector("#agendaDetail");
-  const sortedEvents = getEvents().sort((a, b) => Number(a.date) - Number(b.date));
-  const item = sortedEvents[index];
+  const item = _lastFilteredEvents[index];
   
   if (!item) {
     detail.innerHTML = `
@@ -711,12 +713,16 @@ function renderGroupList() {
   let myGroups = [];
   let isAnyEventValid = false;
 
+  const todayDate = new Date();
+  todayDate.setHours(0, 0, 0, 0);
+
   const upcomingEvents = events.filter(e => {
-    let diff = Number(e.date) - today;
-    if (diff < 0) diff += 30; 
-    
-    if (diff === 0 && cultStatus === "Finalizado") return false;
-    return diff >= 0 && diff <= 7;
+    const eventDate = new Date(todayDate.getFullYear(), todayDate.getMonth(), Number(e.date));
+    const diffMs = eventDate - todayDate;
+    const diffDays = Math.round(diffMs / 86400000);
+
+    if (diffDays === 0 && cultStatus === "Finalizado") return false;
+    return diffDays >= 0 && diffDays <= 7;
   });
 
   if (upcomingEvents.length > 0) {
@@ -896,8 +902,17 @@ function changeUserRole(event) {
   renderRoleAdminOptions();
 }
 
+function leaderIdFor(leaderName) {
+  const allUsers = authApi?.getMockUsers?.() || [];
+  const leader = allUsers.find(u =>
+    u.name.toLowerCase() === leaderName.toLowerCase() ||
+    leaderName.toLowerCase().includes(u.name.toLowerCase())
+  );
+  return leader ? leader.id : slug(leaderName); // fallback para nome caso não ache
+}
+
 function threadIdFor(leaderName, userId = currentUser.id) {
-  return `chat:${userId}:${slug(leaderName)}`;
+  return `chat:${userId}:${leaderIdFor(leaderName)}`;
 }
 
 function canSeeThread(message) {
