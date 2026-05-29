@@ -417,6 +417,35 @@ function renderAgendaDetail(index) {
     return;
   }
 
+  // Verifica se é evento de célula para exibir ações específicas
+  const isCellEvent = Boolean(item.isCellEvent || item.cellId);
+  const userAlreadyJoined = isCellEvent && item.participantId === currentUser.id;
+  const cells = window.NEXT_CELLS || [];
+  const cellData = isCellEvent ? cells.find(c => c.id === item.cellId) : null;
+
+  // Botão de célula: "Participar" (para quem ainda não está) ou "Entrar em contato"
+  let cellActionHtml = '';
+  if (isCellEvent && !userAlreadyJoined && ['jovem', 'responsavel'].includes(currentUser.role)) {
+    cellActionHtml = `
+      <button class="ghost-button" id="joinCellBtn" data-cell-id="${item.cellId}" type="button"
+        style="margin-top:14px;background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 4px 12px rgba(47,115,248,0.25);">
+        Participar 🙌
+      </button>
+    `;
+  } else if (isCellEvent) {
+    const leaders = cellData ? cellData.leaders.join(', ') : 'a liderança';
+    cellActionHtml = `
+      <div style="margin-top:14px;padding:12px 14px;background:rgba(47,115,248,0.07);border:1px solid rgba(47,115,248,0.2);border-radius:10px;">
+        <p class="eyebrow" style="color:var(--blue);margin-bottom:4px;">Você está nesta célula</p>
+        <p style="font-size:0.88rem;color:var(--muted);">Líderes: ${leaders}</p>
+        <button class="ghost-button" id="contactCellLeaderBtn" type="button"
+          style="margin-top:10px;font-size:0.85rem;padding:8px 14px;min-height:36px;">
+          Entrar em contato com a liderança
+        </button>
+      </div>
+    `;
+  }
+
   detail.innerHTML = `
     <p class="eyebrow">Detalhes do evento</p>
     <h3>${item.title}</h3>
@@ -427,12 +456,247 @@ function renderAgendaDetail(index) {
       <span class="small-badge">${item.location || "AD Fonte de Vida"}</span>
       <span class="small-badge">${formatAudience(item.audience)}</span>
     </div>
-    ${canManage() ? `
+    ${cellActionHtml}
+    ${canManage() && !isCellEvent ? `
       <button class="ghost-button" id="deleteEventBtn" data-event-id="${item.id}" type="button" style="margin-top: 14px; color: #dc2626; border-color: #fca5a5; background: #fef2f2;">
         Excluir Evento
       </button>
     ` : ""}
   `;
+
+  // Handler: Participar (jovem clica no detalhe do evento de célula)
+  const joinCellBtn = detail.querySelector('#joinCellBtn');
+  if (joinCellBtn) {
+    joinCellBtn.addEventListener('click', () => {
+      const cellId = joinCellBtn.dataset.cellId;
+      addCellEventsForUser(cellId, currentUser.id);
+    });
+  }
+
+  // Handler: Entrar em contato com líder
+  const contactBtn = detail.querySelector('#contactCellLeaderBtn');
+  if (contactBtn) {
+    contactBtn.addEventListener('click', () => {
+      alert('Envie uma mensagem para a liderança da célula pela aba "Conversar". Eles vão adorar te ajudar! 🙌');
+    });
+  }
+}
+
+// ── Controle semanal de células ─────────────────────────────────────────────
+
+// Retorna a chave ISO da semana (ex: "2026-W22") para uma Date.
+// Semana começa na segunda-feira (ISO 8601).
+function getIsoWeekKey(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7; // dom=7
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
+// Retorna a chave ISO da semana que contém "date" mais N semanas.
+function shiftWeekKey(weekKey, n) {
+  const [yr, wk] = weekKey.split('-W').map(Number);
+  // Recalcula a partir da segunda-feira da semana dada
+  const jan4 = new Date(Date.UTC(yr, 0, 4));
+  const startOfWeek1 = new Date(jan4);
+  startOfWeek1.setUTCDate(jan4.getUTCDate() - (jan4.getUTCDay() || 7) + 1);
+  const targetMonday = new Date(startOfWeek1);
+  targetMonday.setUTCDate(startOfWeek1.getUTCDate() + (wk - 1 + n) * 7);
+  return getIsoWeekKey(targetMonday);
+}
+
+// Chave de armazenamento das confirmações por célula
+const CELL_CONFIRM_KEY = 'next_cell_week_confirmed';
+
+function getCellConfirmations() {
+  try { return JSON.parse(localStorage.getItem(CELL_CONFIRM_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function setCellConfirmation(cellId, weekKey) {
+  const data = getCellConfirmations();
+  data[cellId] = weekKey;
+  localStorage.setItem(CELL_CONFIRM_KEY, JSON.stringify(data));
+}
+
+// Retorna a Date da próxima ocorrência de weekdayNum a partir de fromDate (inclusive).
+function nextOccurrenceFrom(weekdayNum, fromDate) {
+  const d = new Date(fromDate);
+  d.setHours(0, 0, 0, 0);
+  let tries = 0;
+  while (d.getDay() !== weekdayNum && tries < 8) {
+    d.setDate(d.getDate() + 1);
+    tries++;
+  }
+  return tries < 8 ? d : null;
+}
+
+// Retorna a Date da ocorrência de célula visível para a semana atual.
+// Retorna null se bloqueada (semana anterior não confirmada).
+function getUnlockedCellDate(cellId, weekdayNum) {
+  const confirmations = getCellConfirmations();
+  const confirmedWeek = confirmations[cellId]; // semana já confirmada pelo líder
+  const today = new Date();
+  const thisWeekKey = getIsoWeekKey(today);
+
+  // Primeira vez: não há confirmação anterior — mostra a ocorrência desta semana
+  // para que o líder possa confirmar.
+  if (!confirmedWeek) {
+    // Encontra a segunda-feira desta semana ISO
+    const monday = new Date(today);
+    const dow = monday.getDay() || 7;
+    monday.setDate(monday.getDate() - dow + 1);
+    monday.setHours(0, 0, 0, 0);
+    return nextOccurrenceFrom(weekdayNum, monday);
+  }
+
+  // A semana cujo evento pode ser exibido = confirmedWeek + 1
+  const allowedWeek = shiftWeekKey(confirmedWeek, 1);
+
+  // Só exibe se a semana permitida é a atual ou anterior (nunca adiantada)
+  if (allowedWeek > thisWeekKey) return null; // bloqueada: líder não confirmou ainda
+
+  // Encontra a ocorrência na semana permitida
+  const [yr, wk] = allowedWeek.split('-W').map(Number);
+  const jan4 = new Date(Date.UTC(yr, 0, 4));
+  const startOfWeek1 = new Date(jan4);
+  startOfWeek1.setUTCDate(jan4.getUTCDate() - (jan4.getUTCDay() || 7) + 1);
+  const allowedMonday = new Date(startOfWeek1);
+  allowedMonday.setUTCDate(startOfWeek1.getUTCDate() + (wk - 1) * 7);
+  allowedMonday.setHours(0, 0, 0, 0);
+
+  return nextOccurrenceFrom(weekdayNum, allowedMonday);
+}
+
+// Salva um único evento de célula para userId na data indicada.
+function saveCellEventForUser(cell, date, userId, userName, role) {
+  const eventId = `cell_${cell.id}_${userId}_${date.getTime()}`;
+  const weekKey = getIsoWeekKey(date);
+  dbApi?.save('next_events', {
+    id: eventId,
+    date: String(date.getDate()),
+    month: date.toLocaleDateString('pt-BR', { month: 'long' }),
+    weekDay: date.toLocaleDateString('pt-BR', { weekday: 'long' }),
+    time: cell.time,
+    title: `Célula — ${cell.name}`,
+    text: `Encontro de célula em ${cell.location}.`,
+    detail: `Célula ${cell.name} com ${cell.leaders.join(', ')} em ${cell.location}.`,
+    location: cell.location,
+    audience: role === 'responsavel' ? 'responsaveis' : 'jovens',
+    isCellEvent: true,
+    cellId: cell.id,
+    cellName: cell.name,
+    participantId: userId,
+    cellWeekKey: weekKey,
+    status: 'pending_leader',
+  });
+}
+
+// Confirmação da célula da semana pelo líder:
+// grava a semana como confirmada e cria o evento da PRÓXIMA semana para todos os participantes.
+function confirmCellWeek(cellId) {
+  const cells = window.NEXT_CELLS || [];
+  const cell = cells.find(c => c.id === cellId);
+  if (!cell) return;
+
+  const confirmations = getCellConfirmations();
+  const confirmedWeek = confirmations[cellId];
+  const today = new Date();
+  const thisWeekKey = getIsoWeekKey(today);
+
+  // A semana a confirmar é a atual (ou a desbloqueada se ainda não confirmada)
+  const weekToConfirm = confirmedWeek ? shiftWeekKey(confirmedWeek, 1) : thisWeekKey;
+  setCellConfirmation(cellId, weekToConfirm);
+
+  // Calcula a data da ocorrência da PRÓXIMA semana
+  const nextWeekKey = shiftWeekKey(weekToConfirm, 1);
+  const [yr, wk] = nextWeekKey.split('-W').map(Number);
+  const jan4 = new Date(Date.UTC(yr, 0, 4));
+  const startOfWeek1 = new Date(jan4);
+  startOfWeek1.setUTCDate(jan4.getUTCDate() - (jan4.getUTCDay() || 7) + 1);
+  const nextMonday = new Date(startOfWeek1);
+  nextMonday.setUTCDate(startOfWeek1.getUTCDate() + (wk - 1) * 7);
+  nextMonday.setHours(0, 0, 0, 0);
+  const nextDate = nextOccurrenceFrom(cell.weekdayNum, nextMonday);
+  if (!nextDate) return;
+
+  // Cria o evento para cada participante da célula
+  const allEvents = dbApi?.getAll('next_events') || [];
+  const participantIds = [...new Set(
+    allEvents
+      .filter(e => e.isCellEvent && e.cellId === cellId)
+      .map(e => e.participantId)
+      .filter(Boolean)
+  )];
+
+  const allUsers = authApi?.getMockUsers?.() || [];
+  participantIds.forEach(pid => {
+    const u = allUsers.find(u => u.id === pid);
+    saveCellEventForUser(cell, nextDate, pid, u?.name || '', u?.role || 'jovem');
+  });
+
+  renderCalendar();
+  renderCellWeekPanel();
+}
+
+// Adiciona eventos recorrentes de célula para um usuário (chamado do detalhe da agenda)
+function addCellEventsForUser(cellId, userId) {
+  const cells = window.NEXT_CELLS || [];
+  const cell = cells.find(c => c.id === cellId);
+  if (!cell) return;
+
+  // Encontra a ocorrência desbloqueada desta semana
+  const unlockedDate = getUnlockedCellDate(cellId, cell.weekdayNum);
+  if (unlockedDate) {
+    saveCellEventForUser(cell, unlockedDate, userId, currentUser.name, 'jovem');
+
+    // Também cria para o responsável, se houver
+    const allUsers = authApi?.getMockUsers?.() || [];
+    const responsible = allUsers.find(u => u.role === 'responsavel' && u.childName === currentUser.name);
+    if (responsible) {
+      const evId = `cell_resp_${cellId}_${responsible.id}_${unlockedDate.getTime()}`;
+      dbApi?.save('next_events', {
+        id: evId,
+        date: String(unlockedDate.getDate()),
+        month: unlockedDate.toLocaleDateString('pt-BR', { month: 'long' }),
+        weekDay: unlockedDate.toLocaleDateString('pt-BR', { weekday: 'long' }),
+        time: cell.time,
+        title: `Célula de ${currentUser.name} — ${cell.name}`,
+        text: `Encontro de célula do(a) jovem ${currentUser.name} em ${cell.location}.`,
+        detail: `${currentUser.name} vai participar da ${cell.name} em ${cell.location}.`,
+        location: cell.location,
+        audience: 'responsaveis',
+        isCellEvent: true,
+        cellId: cell.id,
+        cellName: cell.name,
+        participantId: responsible.id,
+        cellWeekKey: getIsoWeekKey(unlockedDate),
+        status: 'pending_leader',
+      });
+    }
+  }
+
+  // Registra interesse para liderança
+  dbApi?.save('next_cell_interests', {
+    id: `ci_${Date.now()}`,
+    userId,
+    userName: currentUser.name,
+    userCity: currentUser.city || '',
+    cellId: cell.id,
+    cellName: cell.name,
+    status: 'pending',
+    createdAt: Date.now(),
+  });
+
+  authApi?.updateSession({ pendingCellId: cell.id, pendingCellName: cell.name });
+  renderCalendar();
+
+  const msg = unlockedDate
+    ? `Você foi adicionado à ${cell.name}! O encontro desta semana aparece na sua agenda. 🙌`
+    : `Você foi adicionado à ${cell.name}! O encontro aparecerá na agenda assim que a liderança confirmar a célula da semana. 🙌`;
+  alert(msg);
 }
 
 function selectAgendaItem(index) {
@@ -1271,6 +1535,77 @@ function renderPrayerAdminList() {
   }).join("");
 }
 
+// Painel de confirmação semanal de células (visível para líderes na aba Gestão)
+function renderCellWeekPanel() {
+  const container = document.querySelector('#cellWeekPanel');
+  if (!container) return;
+  if (!canManage()) { container.style.display = 'none'; return; }
+
+  const cells = (window.NEXT_CELLS || []).filter(cell => {
+    // Mostra apenas as células cujos líderes incluem o usuário logado (ou todas para admin/pastor)
+    if (canManageAll()) return true;
+    return cell.leaders.some(l => l.toLowerCase().includes(currentUser.name.toLowerCase()));
+  });
+
+  if (!cells.length) {
+    container.innerHTML = '<p class="safety-note">Nenhuma célula vinculada ao seu perfil.</p>';
+    return;
+  }
+
+  const confirmations = getCellConfirmations();
+  const today = new Date();
+  const thisWeekKey = getIsoWeekKey(today);
+
+  container.style.display = 'block';
+  container.innerHTML = cells.map(cell => {
+    const confirmedWeek = confirmations[cell.id];
+    const nextAllowed   = confirmedWeek ? shiftWeekKey(confirmedWeek, 1) : thisWeekKey;
+    const alreadyDone   = confirmedWeek === thisWeekKey;
+    const isBlocked     = !alreadyDone && nextAllowed > thisWeekKey;
+
+    // Data da próxima ocorrência desta célula
+    const nextDate = getUnlockedCellDate(cell.id, cell.weekdayNum);
+    const dateLabel = nextDate
+      ? nextDate.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+      : 'Aguardando confirmação da semana anterior';
+
+    let statusBadge = '';
+    let actionHtml  = '';
+
+    if (alreadyDone) {
+      statusBadge = `<span class="small-badge" style="background:rgba(16,185,129,0.12);color:#065f46;border:1px solid rgba(16,185,129,0.3);">✓ Confirmada</span>`;
+      actionHtml  = `<p style="font-size:0.82rem;color:var(--muted);margin-top:6px;">Próxima: ${dateLabel}</p>`;
+    } else if (isBlocked) {
+      statusBadge = `<span class="small-badge" style="background:rgba(220,38,38,0.1);color:#b91c1c;border:1px solid rgba(220,38,38,0.2);">Bloqueada</span>`;
+      actionHtml  = `<p style="font-size:0.82rem;color:var(--muted);margin-top:6px;">Confirme a semana atual para desbloquear a próxima.</p>`;
+    } else {
+      statusBadge = `<span class="small-badge" style="background:rgba(251,191,36,0.12);color:#b45309;border:1px solid rgba(251,191,36,0.3);">Pendente</span>`;
+      actionHtml  = `
+        <p style="font-size:0.82rem;color:var(--muted);margin-top:4px;">Próximo encontro: <strong>${dateLabel}</strong></p>
+        <button class="primary-button compact btn-confirm-cell-week" data-cell-id="${cell.id}" type="button"
+          style="margin-top:10px;font-size:0.82rem;min-height:36px;width:100%;">
+          ✓ Confirmar célula desta semana
+        </button>
+      `;
+    }
+
+    return `
+      <article class="admin-list-item" style="gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+          <div>
+            <strong style="font-size:1.05rem;">${cell.name}</strong>
+            <span style="display:block;font-size:0.8rem;color:var(--blue);font-weight:800;text-transform:uppercase;">
+              ${cell.day} às ${cell.time} · ${cell.location}
+            </span>
+          </div>
+          ${statusBadge}
+        </div>
+        ${actionHtml}
+      </article>
+    `;
+  }).join('');
+}
+
 function renderApplicationsList() {
   const list = document.querySelector("#applicationsAdminList");
   if (!list) return;
@@ -1305,7 +1640,52 @@ function renderAdminLists() {
   renderServoOptions();
   renderPrayerAdminList();
   renderApplicationsList();
+  renderCellPendingList();
+  renderCellWeekPanel();
   if (canManageAll()) renderRoleAdminOptions();
+}
+
+function renderCellPendingList() {
+  const container = document.querySelector("#cellPendingAdminList");
+  if (!container) return;
+
+  const interests = dbApi?.getAll("next_cell_interests") || [];
+  const pending = interests.filter(i => i.status === "pending");
+
+  if (!pending.length) {
+    container.innerHTML = "<p class='safety-note'>Nenhum jovem aguardando confirmação de célula.</p>";
+    return;
+  }
+
+  const cells = window.NEXT_CELLS || [];
+
+  container.innerHTML = pending.map(item => {
+    const cell = cells.find(c => c.id === item.cellId);
+    return `
+      <article class="admin-list-item" style="gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+          <div>
+            <strong style="font-size:1.05rem;">${item.userName}</strong>
+            <span style="display:block;font-size:0.8rem;color:var(--blue);font-weight:800;text-transform:uppercase;">
+              ${item.cellName} · ${item.userCity || "Cidade não informada"}
+            </span>
+          </div>
+          <span class="small-badge" style="background:rgba(251,191,36,0.12);color:#b45309;border:1px solid rgba(251,191,36,0.3);">
+            Pendente
+          </span>
+        </div>
+        ${cell ? `<p style="font-size:0.82rem;color:var(--muted);">📅 ${cell.day} às ${cell.time} · 📍 ${cell.location}</p>` : ""}
+        <div class="btn-row">
+          <button class="primary-button compact btn-confirm-cell" data-interest-id="${item.id}" data-user-name="${item.userName}" type="button">
+            Confirmar presença
+          </button>
+          <button class="ghost-button btn-contact-cell" data-interest-id="${item.id}" data-user-id="${item.userId}" data-user-name="${item.userName}" type="button">
+            Entrar em contato
+          </button>
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function savePost(event) {
@@ -2055,6 +2435,74 @@ function bindEvents() {
       renderPrayerAdminList();
     });
   }
+
+  // Confirmação semanal de célula pelo líder
+  document.querySelector("#cellWeekPanel")?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".btn-confirm-cell-week");
+    if (!btn) return;
+    const cellId = btn.dataset.cellId;
+    const cells = window.NEXT_CELLS || [];
+    const cell = cells.find(c => c.id === cellId);
+    if (!cell) return;
+    confirmCellWeek(cellId);
+    renderCellWeekPanel();
+    alert(`Célula ${cell.name} confirmada! O encontro da próxima semana já está desbloqueado na agenda. 🙌`);
+  });
+
+  // Célula: confirmar presença / entrar em contato
+  document.querySelector("#cellPendingAdminList")?.addEventListener("click", (e) => {
+    const confirmBtn = e.target.closest(".btn-confirm-cell");
+    const contactBtn = e.target.closest(".btn-contact-cell");
+
+    if (confirmBtn) {
+      const interestId = confirmBtn.dataset.interestId;
+      const userName   = confirmBtn.dataset.userName;
+      const interests  = dbApi?.getAll("next_cell_interests") || [];
+      const item       = interests.find(i => i.id === interestId);
+      if (!item) return;
+      item.status = "confirmed";
+      dbApi?.save("next_cell_interests", item);
+
+      // Marca o jovem como membro de célula
+      const user = getUsers().find(u => u.id === item.userId);
+      if (user) {
+        saveItem("next_users", { ...user, hasCell: true, cellId: item.cellId, cellName: item.cellName });
+      }
+
+      renderCellPendingList();
+      alert(`${userName} confirmado(a) na ${item.cellName}! ✓`);
+    }
+
+    if (contactBtn) {
+      const userId   = contactBtn.dataset.userId;
+      const userName = contactBtn.dataset.userName;
+      const interestId = contactBtn.dataset.interestId;
+      const interests  = dbApi?.getAll("next_cell_interests") || [];
+      const item       = interests.find(i => i.id === interestId);
+
+      // Envia mensagem automática para o jovem
+      const threadId = threadIdFor(currentUser.name, userId);
+      saveItem("next_messages", {
+        id: `msg_${Date.now()}`,
+        threadId,
+        leaderName: currentUser.name,
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        senderRole: currentUser.role,
+        anonymous: false,
+        text: `Oi, ${userName}! Vi que você demonstrou interesse na ${item?.cellName || "célula"}. Que ótimo! Quer que eu te passe mais detalhes sobre como funciona? Estou aqui para te ajudar. 🙌`,
+        createdAt: Date.now(),
+      });
+
+      if (item) {
+        item.status = "contacted";
+        dbApi?.save("next_cell_interests", item);
+      }
+
+      renderCellPendingList();
+      alert(`Mensagem enviada para ${userName}! Acompanhe pela aba Mensagens.`);
+    }
+  });
 }
 
 async function boot() {

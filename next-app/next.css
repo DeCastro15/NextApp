@@ -19,7 +19,7 @@
   --shadow-blue: 0 8px 24px rgba(47, 115, 248, 0.28);
   --radius:    12px;
   --radius-sm: 8px;
-  --text-base: 15px;
+  --text-base: 14px;
   --font-display: 'Syne', system-ui, sans-serif;
   --font-body:    'DM Sans', system-ui, sans-serif;
 }
@@ -112,13 +112,13 @@ button { cursor: pointer; }
   color: var(--muted);
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .sidebar .eyebrow {
   color: rgba(255,255,255,0.38);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
 }
 
 /* Nav */
@@ -1151,14 +1151,21 @@ select:focus {
 
 .admin-list { display: grid; gap: 9px; }
 
-.admin-list-item {
+.admin-list-item { display: grid; gap: 4px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); padding: 11px 12px; background: var(--soft); transition: border-color 140ms; }
+
+.admin-list-item .btn-row {
   display: grid;
-  gap: 4px;
-  border: 1.5px solid var(--line);
-  border-radius: var(--radius-sm);
-  padding: 11px 12px;
-  background: var(--soft);
-  transition: border-color 140ms;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+  align-items: stretch;
+}
+
+.admin-list-item .btn-row .primary-button,
+.admin-list-item .btn-row .ghost-button {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
 }
 
 .admin-list-item:hover { border-color: var(--blue); }
@@ -1275,7 +1282,7 @@ select:focus {
   font-size: 0.92rem;
   text-transform: uppercase;
   border-bottom: 2px solid #111;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 
 .escala-grid-row {

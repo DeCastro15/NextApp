@@ -28,7 +28,6 @@
         overflow-x: hidden;
       }
 
-      /* Fundo animado com partículas */
       body::before {
         content: '';
         position: fixed;
@@ -64,7 +63,6 @@
         to { opacity: 1; transform: translateY(0); }
       }
 
-      /* Painel esquerdo (intro) */
       .intro {
         min-height: 520px;
         display: grid;
@@ -120,10 +118,7 @@
         letter-spacing: 0.08em;
       }
 
-      .intro-bottom {
-        position: relative;
-        z-index: 1;
-      }
+      .intro-bottom { position: relative; z-index: 1; }
 
       .intro h1 {
         max-width: 620px;
@@ -133,9 +128,7 @@
         letter-spacing: -0.02em;
       }
 
-      .intro h1 span {
-        color: #b7ff3c;
-      }
+      .intro h1 span { color: #b7ff3c; }
 
       .intro > .intro-bottom > p {
         max-width: 480px;
@@ -145,7 +138,6 @@
         line-height: 1.55;
       }
 
-      /* Frase de fé */
       .faith-tag {
         display: inline-flex;
         align-items: center;
@@ -167,13 +159,14 @@
         to   { opacity: 1; transform: scale(1); }
       }
 
-      /* Card de login (direita) */
+      /* ── Login card ── */
       .login-card {
         padding: 28px;
         border-radius: 16px;
         background: #fff;
         border: 1px solid var(--line);
         box-shadow: 0 24px 64px rgba(17,24,39,0.12);
+        overflow: hidden;
       }
 
       .login-card h2 {
@@ -198,7 +191,12 @@
         font-size: 0.9rem;
       }
 
-      input {
+      input[type="text"],
+      input[type="email"],
+      input[type="password"],
+      input[type="tel"],
+      input[type="number"],
+      select {
         width: 100%;
         min-height: 48px;
         border: 1.5px solid var(--line);
@@ -208,9 +206,10 @@
         font: inherit;
         outline: none;
         transition: border-color 160ms, box-shadow 160ms;
+        background: #fff;
       }
 
-      input:focus {
+      input:focus, select:focus {
         border-color: var(--blue);
         box-shadow: 0 0 0 4px rgba(47,115,248,0.12);
       }
@@ -229,14 +228,8 @@
         box-shadow: 0 8px 20px rgba(47,115,248,0.3);
       }
 
-      button[type="submit"]:hover {
-        background: #1655d5;
-        box-shadow: 0 10px 28px rgba(47,115,248,0.45);
-      }
-
-      button[type="submit"]:active {
-        transform: scale(0.98);
-      }
+      button[type="submit"]:hover { background: #1655d5; box-shadow: 0 10px 28px rgba(47,115,248,0.45); }
+      button[type="submit"]:active { transform: scale(0.98); }
 
       .message {
         min-height: 22px;
@@ -255,44 +248,254 @@
         border-radius: 10px;
         padding: 12px;
         cursor: pointer;
-        font-weight: 800;
         font: inherit;
         font-weight: 800;
         transition: border-color 160ms, background 160ms;
       }
 
-      #toggleFormBtn:hover {
-        border-color: var(--blue);
-        background: #f0f6ff;
+      #toggleFormBtn:hover { border-color: var(--blue); background: #f0f6ff; }
+
+      /* ── Onboarding slide ── */
+      .slide-outer {
+        overflow: hidden;
+        /* height transitions smoothly */
       }
+
+      .slide-wrapper {
+        display: flex;
+        width: 200%;
+        transition: transform 480ms cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .slide-wrapper.shifted { transform: translateX(-50%); }
+
+      .slide-panel {
+        width: 50%;
+        flex-shrink: 0;
+      }
+
+      /* Step 2 initially invisible — only becomes visible after account creation */
+      #regStep2 {
+        visibility: hidden;
+        pointer-events: none;
+        transition: visibility 0s 480ms; /* delay until after slide */
+      }
+
+      .slide-wrapper.shifted #regStep2 {
+        visibility: visible;
+        pointer-events: auto;
+        transition: visibility 0s 0s;
+      }
+
+      /* Cell yes/no toggle */
+      .toggle-row {
+        display: flex;
+        gap: 10px;
+      }
+
+      .toggle-btn {
+        flex: 1;
+        min-height: 46px;
+        border: 1.5px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 160ms;
+      }
+
+      .toggle-btn.active {
+        background: var(--blue);
+        color: #fff;
+        border-color: var(--blue);
+        box-shadow: 0 4px 12px rgba(47,115,248,0.25);
+      }
+
+      /* ── Cell popup overlay ── */
+      .cell-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(10,15,30,0.75);
+        backdrop-filter: blur(6px);
+        z-index: 999;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        animation: fadeIn 300ms ease;
+      }
+
+      .cell-overlay.hidden { display: none; }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .cell-modal {
+        width: min(540px, 100%);
+        background: #fff;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 40px 100px rgba(10,15,30,0.4);
+        animation: modalUp 420ms cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      @keyframes modalUp {
+        from { opacity: 0; transform: translateY(32px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .cell-modal-header {
+        padding: 24px 24px 16px;
+        background: linear-gradient(135deg, rgba(47,115,248,0.07), rgba(183,255,60,0.04));
+        border-bottom: 1px solid var(--line);
+      }
+
+      .cell-modal-header h3 {
+        font-size: 1.25rem;
+        font-weight: 800;
+        margin: 0 0 4px;
+        letter-spacing: -0.01em;
+      }
+
+      .cell-modal-header p {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin: 0;
+      }
+
+      .cell-list {
+        padding: 16px 24px;
+        display: grid;
+        gap: 12px;
+        max-height: 360px;
+        overflow-y: auto;
+      }
+
+      .cell-card {
+        border: 1.5px solid var(--line);
+        border-radius: 12px;
+        padding: 14px 16px;
+        transition: border-color 160ms, box-shadow 160ms;
+      }
+
+      .cell-card:hover { border-color: var(--blue); box-shadow: 0 4px 16px rgba(47,115,248,0.1); }
+
+      .cell-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+
+      .cell-name { font-weight: 800; font-size: 1rem; color: var(--ink); }
+
+      .cell-city-badge {
+        font-size: 0.72rem;
+        font-weight: 800;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: rgba(47,115,248,0.1);
+        color: var(--blue);
+        white-space: nowrap;
+      }
+
+      .cell-meta {
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-bottom: 8px;
+        line-height: 1.5;
+      }
+
+      .cell-leaders {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+
+      .leader-chip {
+        font-size: 0.78rem;
+        font-weight: 700;
+        background: #f5f7fb;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 3px 10px;
+        color: var(--ink);
+      }
+
+      .cell-join-btn {
+        width: 100%;
+        min-height: 40px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--blue);
+        color: #fff;
+        font: inherit;
+        font-weight: 800;
+        font-size: 0.88rem;
+        cursor: pointer;
+        transition: background 160ms, transform 80ms;
+        box-shadow: 0 4px 12px rgba(47,115,248,0.25);
+      }
+
+      .cell-join-btn:hover { background: #1655d5; }
+      .cell-join-btn:active { transform: scale(0.98); }
+
+      .cell-modal-footer {
+        padding: 12px 24px 20px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        justify-content: center;
+      }
+
+      .cell-later-btn {
+        background: transparent;
+        border: 0;
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.88rem;
+        cursor: pointer;
+        padding: 8px 16px;
+        border-radius: 8px;
+        transition: color 160ms, background 160ms;
+      }
+
+      .cell-later-btn:hover { color: var(--ink); background: #f5f7fb; }
 
       @media (max-width: 820px) {
         body { padding: 16px; }
-
-        .login-shell {
-          grid-template-columns: 1fr;
-        }
-
-        .intro {
-          min-height: 300px;
-          padding: 24px;
-        }
-
-        .intro h1 {
-          font-size: 2.2rem;
-        }
+        .login-shell { grid-template-columns: 1fr; }
+        .intro { min-height: 300px; padding: 24px; }
+        .intro h1 { font-size: 2.2rem; }
       }
 
       @media (max-width: 480px) {
         body { padding: 12px; }
-
         .login-card { padding: 20px; }
-
         .intro h1 { font-size: 1.9rem; }
       }
-  </style>
+    </style>
   </head>
   <body>
+
+    <!-- ── Cell popup ── -->
+    <div class="cell-overlay hidden" id="cellOverlay">
+      <div class="cell-modal">
+        <div class="cell-modal-header">
+          <h3>🔥 Participe de uma célula!</h3>
+          <p id="cellModalDesc">Encontramos células próximas a você. Conectar-se a uma muda tudo.</p>
+        </div>
+        <div class="cell-list" id="cellList"></div>
+        <div class="cell-modal-footer">
+          <button class="cell-later-btn" id="cellLaterBtn">Agora não — lembrar em 7 dias</button>
+        </div>
+      </div>
+    </div>
+
     <main class="login-shell">
       <section class="intro">
         <div class="brand">
@@ -302,7 +505,6 @@
             <strong>Juventude Next</strong>
           </div>
         </div>
-
         <div class="intro-bottom">
           <div class="faith-tag">🔥 A gen that burns for Jesus</div>
           <h1>Seu <span>próximo</span><br>passo com o Next</h1>
@@ -314,15 +516,16 @@
         <h2 id="cardTitle">Entrar</h2>
         <p id="cardDesc">Use uma conta cadastrada ou crie a sua.</p>
 
+        <!-- Login -->
         <form id="loginForm">
           <label>
             E-mail
             <input id="email" type="email" autocomplete="email" required />
           </label>
           <label>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
               Senha
-              <a href="#" id="showForgotBtn" tabindex="-1" style="font-size: 0.85rem; color: var(--blue); text-decoration: none; font-weight: 800;">Esqueceu a senha?</a>
+              <a href="#" id="showForgotBtn" tabindex="-1" style="font-size:0.85rem;color:var(--blue);text-decoration:none;font-weight:800;">Esqueceu a senha?</a>
             </div>
             <input id="password" type="password" autocomplete="current-password" required />
           </label>
@@ -330,127 +533,406 @@
           <p class="message" id="message" role="status"></p>
         </form>
 
-        <form id="registerForm" style="display: none;">
-          <label>
-            Nome e Sobrenome
-            <input id="regName" type="text" required />
-          </label>
-          <label>
-            E-mail
-            <input id="regEmail" type="email" required />
-          </label>
-          <label>
-            Senha (mínimo 6 caracteres)
-            <input id="regPassword" type="password" minlength="6" required />
-          </label>
-          <button type="submit">Criar Conta</button>
-          <p class="message" id="regMessage" role="status"></p>
-        </form>
+        <!-- Cadastro: slide de 2 etapas. Etapa 2 invisível até conta criada. -->
+        <div id="registerWrapper" style="display:none;">
+          <div class="slide-outer">
+            <div class="slide-wrapper" id="slideWrapper">
 
-        <form id="forgotForm" style="display: none;">
+              <!-- Etapa 1: dados de conta -->
+              <div class="slide-panel" id="regStep1">
+                <form id="registerForm" style="display:grid;gap:14px;">
+                  <label>
+                    Nome e Sobrenome
+                    <input id="regName" type="text" required />
+                  </label>
+                  <label>
+                    E-mail
+                    <input id="regEmail" type="email" required />
+                  </label>
+                  <label>
+                    Senha (mínimo 6 caracteres)
+                    <input id="regPassword" type="password" minlength="6" required />
+                  </label>
+                  <button type="submit">Criar Conta</button>
+                  <p class="message" id="regMessage" role="status"></p>
+                </form>
+              </div>
+
+              <!-- Etapa 2: perfil — invisível até slide -->
+              <div class="slide-panel" id="regStep2">
+                <form id="profileStep2Form" style="display:grid;gap:14px;">
+                  <label>
+                    Idade
+                    <input id="profAge" type="number" min="10" max="40" placeholder="Ex: 17" required />
+                  </label>
+                  <label>
+                    Telefone / WhatsApp
+                    <input id="profPhone" type="tel" placeholder="(27) 9 0000-0000" />
+                  </label>
+                  <label>
+                    Cidade
+                    <select id="profCity" required>
+                      <option value="" disabled selected>Selecione sua cidade</option>
+                      <option value="Serra">Serra</option>
+                      <option value="Vila Velha">Vila Velha</option>
+                      <option value="Vitória">Vitória</option>
+                    </select>
+                  </label>
+                  <label>Participa de alguma célula?</label>
+                  <div class="toggle-row">
+                    <button type="button" class="toggle-btn" id="cellYes">Sim 🙌</button>
+                    <button type="button" class="toggle-btn" id="cellNo">Não</button>
+                  </div>
+                  <input type="hidden" id="profCell" value="" />
+                  <button type="submit">Entrar no Next</button>
+                  <p class="message" id="profMessage" role="status"></p>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Recuperação de senha -->
+        <form id="forgotForm" style="display:none;">
           <label>
             E-mail cadastrado
             <input id="forgotEmail" type="email" placeholder="nome@email.com" required />
           </label>
           <button type="submit">Enviar link de recuperação</button>
-          <button type="button" id="backToLoginBtn" style="background: transparent; color: var(--ink); border: 1px solid var(--line);">Voltar para o login</button>
+          <button type="button" id="backToLoginBtn" style="background:transparent;color:var(--ink);border:1.5px solid var(--line);min-height:48px;border-radius:10px;font:inherit;font-weight:800;cursor:pointer;">Voltar para o login</button>
           <p class="message" id="forgotMessage" role="status"></p>
         </form>
 
-        <button id="toggleFormBtn" type="button" style="margin-top: 16px; width: 100%; background: transparent; color: var(--blue); border: 1px solid var(--line); border-radius: 8px; padding: 12px; cursor: pointer; font-weight: bold;">
-          Não tem conta? Cadastre-se
-        </button>
+        <button id="toggleFormBtn" type="button">Não tem conta? Cadastre-se</button>
       </section>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="supabase-config.js"></script>
     <script>
+      // ── Cell data ────────────────────────────────────────────────────────────
+      const CELLS = [
+        {
+          id: 'cell_serra_boulevard',
+          name: 'Célula Boulevard',
+          city: 'Serra',
+          leaders: ['Matheus', 'Julya Lemes'],
+          day: 'Todas as terças',
+          weekdayNum: 2, // 0=Dom, 2=Ter, 4=Qui, 6=Sab
+          time: '20h00',
+          location: 'Boulevard Lagoa',
+          whatsapp: null,
+        },
+        {
+          id: 'cell_vitoria_jc',
+          name: 'Célula JC',
+          city: 'Vitória',
+          leaders: ['Matheus Santana', 'Gabriel Gaiger', 'Nayuri', 'Arthur Mendes'],
+          day: 'Todas as terças',
+          weekdayNum: 2,
+          time: '20h00',
+          location: 'Edifício Capri',
+          whatsapp: null,
+        },
+        {
+          id: 'cell_vilavelha_farol',
+          name: 'Célula Farol',
+          city: 'Vila Velha',
+          leaders: ['Rebeca Martins', 'Felipe Souza'],
+          day: 'Todas as quintas',
+          weekdayNum: 4,
+          time: '19h30',
+          location: 'Praia de Itaparica',
+          whatsapp: null,
+        },
+      ];
+
+      // Expõe as células para que next.js possa usar
+      window.NEXT_CELLS = CELLS;
+
+      // ── Auth check ───────────────────────────────────────────────────────────
       const currentUser = NextAuth.currentUser();
-      if (currentUser) {
-        window.location.href = "next.html";
-      }
+      if (currentUser) checkCellPopup(currentUser);
 
-      const loginForm = document.querySelector("#loginForm");
-      const registerForm = document.querySelector("#registerForm");
-      const forgotForm = document.querySelector("#forgotForm");
-      const toggleBtn = document.querySelector("#toggleFormBtn");
-      const showForgotBtn = document.querySelector("#showForgotBtn");
-      const backToLoginBtn = document.querySelector("#backToLoginBtn");
-      const cardTitle = document.querySelector("#cardTitle");
-      const cardDesc = document.querySelector("#cardDesc");
+      // ── Cell popup ───────────────────────────────────────────────────────────
+      function checkCellPopup(user) {
+        const isYoung = ['jovem', 'responsavel'].includes(user.role);
+        const hasCell = user.hasCell === true;
 
-      // Alternar entre Login e Cadastro
-      toggleBtn.addEventListener("click", () => {
-        const isLogin = loginForm.style.display !== "none";
-        loginForm.style.display = isLogin ? "none" : "grid";
-        registerForm.style.display = isLogin ? "grid" : "none";
-        cardTitle.textContent = isLogin ? "Criar Conta" : "Entrar";
-        cardDesc.textContent = isLogin ? "Preencha seus dados para começar." : "Use uma conta cadastrada ou crie a sua.";
-        toggleBtn.textContent = isLogin ? "Já tenho conta. Fazer login" : "Não tem conta? Cadastre-se";
-      });
-
-      // Mostrar formulário de "Esqueceu a senha"
-      showForgotBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        loginForm.style.display = "none";
-        registerForm.style.display = "none";
-        forgotForm.style.display = "grid";
-        toggleBtn.style.display = "none";
-        cardTitle.textContent = "Recuperar Senha";
-        cardDesc.textContent = "Enviaremos um link de recuperação para o seu e-mail.";
-      });
-
-      // Voltar para o Login
-      backToLoginBtn.addEventListener("click", () => {
-        forgotForm.style.display = "none";
-        loginForm.style.display = "grid";
-        toggleBtn.style.display = "block";
-        cardTitle.textContent = "Entrar";
-        cardDesc.textContent = "Use uma conta cadastrada ou crie a sua.";
-        document.querySelector("#forgotMessage").textContent = "";
-      });
-
-      // Lógica de Login
-      loginForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        document.querySelector("#message").textContent = "Carregando...";
-        const user = await NextAuth.login(document.querySelector("#email").value.trim(), document.querySelector("#password").value);
-        if (!user) {
-          document.querySelector("#message").textContent = "E-mail ou senha inválidos.";
+        if (!isYoung || hasCell) {
+          window.location.href = 'next.html';
           return;
         }
-        window.location.href = "next.html";
+
+        const dismissedUntil = parseInt(localStorage.getItem(`cellDismissed:${user.id}`) || '0');
+        if (dismissedUntil > Date.now()) {
+          window.location.href = 'next.html';
+          return;
+        }
+
+        showCellPopup(user);
+      }
+
+      function showCellPopup(user) {
+        const city = user.city || '';
+        const filtered = CELLS.filter(c => c.city === city);
+        const list = filtered.length > 0 ? filtered : CELLS;
+
+        document.getElementById('cellModalDesc').textContent = city
+          ? `Células disponíveis em ${city}. Participar transforma a caminhada.`
+          : 'Células disponíveis próximas a você. Participar transforma a caminhada.';
+
+        document.getElementById('cellList').innerHTML = list.map(cell => `
+          <div class="cell-card">
+            <div class="cell-card-top">
+              <span class="cell-name">${cell.name}</span>
+              <span class="cell-city-badge">${cell.city}</span>
+            </div>
+            <div class="cell-meta">📅 ${cell.day} às ${cell.time} &nbsp;|&nbsp; 📍 ${cell.location}</div>
+            <div class="cell-leaders">
+              ${cell.leaders.map(l => `<span class="leader-chip">👤 ${l}</span>`).join('')}
+            </div>
+            <button class="cell-join-btn" onclick="joinCell('${cell.id}', '${user.id}')">
+              Participar 🙌
+            </button>
+          </div>
+        `).join('');
+
+        document.getElementById('cellOverlay').classList.remove('hidden');
+
+        document.getElementById('cellLaterBtn').onclick = () => {
+          const seven = Date.now() + 7 * 24 * 60 * 60 * 1000;
+          localStorage.setItem(`cellDismissed:${user.id}`, String(seven));
+          window.location.href = 'next.html';
+        };
+      }
+
+      function getIsoWeekKey(date) {
+        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+        const day = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() + 4 - day);
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const week = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+        return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+      }
+
+      function getUnlockedCellDateFromIndex(cell) {
+        let confirmed;
+        try { confirmed = (JSON.parse(localStorage.getItem('next_cell_week_confirmed')) || {})[cell.id]; } catch { confirmed = null; }
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const monday = new Date(today);
+        const dow = monday.getDay() || 7;
+        monday.setDate(monday.getDate() - dow + 1);
+        if (!confirmed) {
+          // Primeira vez: ocorrência desta semana
+          const d = new Date(monday);
+          let tries = 0;
+          while (d.getDay() !== cell.weekdayNum && tries < 8) { d.setDate(d.getDate() + 1); tries++; }
+          return tries < 8 ? d : null;
+        }
+        // Semana permitida = confirmed + 1
+        const [yr, wk] = confirmed.split('-W').map(Number);
+        const jan4 = new Date(Date.UTC(yr, 0, 4));
+        const sw1 = new Date(jan4);
+        sw1.setUTCDate(jan4.getUTCDate() - (jan4.getUTCDay() || 7) + 1);
+        const nextMon = new Date(sw1);
+        nextMon.setUTCDate(sw1.getUTCDate() + wk * 7);
+        nextMon.setHours(0,0,0,0);
+        const thisWeek = getIsoWeekKey(today);
+        const allowed = getIsoWeekKey(nextMon);
+        if (allowed > thisWeek) return null;
+        const d = new Date(nextMon);
+        let tries = 0;
+        while (d.getDay() !== cell.weekdayNum && tries < 8) { d.setDate(d.getDate() + 1); tries++; }
+        return tries < 8 ? d : null;
+      }
+
+      function joinCell(cellId, userId) {
+        const cell = CELLS.find(c => c.id === cellId);
+        if (!cell) return;
+
+        const date = getUnlockedCellDateFromIndex(cell);
+
+        if (date) {
+          const eventId = `cell_${cellId}_${userId}_${date.getTime()}`;
+          NextDB.save('next_events', {
+            id: eventId,
+            date: String(date.getDate()),
+            month: date.toLocaleDateString('pt-BR', { month: 'long' }),
+            weekDay: date.toLocaleDateString('pt-BR', { weekday: 'long' }),
+            time: cell.time,
+            title: `Célula — ${cell.name}`,
+            text: `Encontro de célula em ${cell.location}.`,
+            detail: `Célula ${cell.name} com ${cell.leaders.join(', ')} em ${cell.location}.`,
+            location: cell.location,
+            audience: 'jovens',
+            isCellEvent: true,
+            cellId: cell.id,
+            cellName: cell.name,
+            participantId: userId,
+            cellWeekKey: getIsoWeekKey(date),
+            status: 'pending_leader',
+          });
+        }
+
+        // Salva interesse na célula para a liderança ver (pendente de confirmação)
+        NextDB.save('next_cell_interests', {
+          id: `ci_${Date.now()}`,
+          userId,
+          userName: NextAuth.currentUser()?.name || '',
+          userCity: NextAuth.currentUser()?.city || '',
+          cellId: cell.id,
+          cellName: cell.name,
+          status: 'pending',
+          createdAt: Date.now(),
+        });
+
+        // Atualiza sessão com a célula escolhida
+        NextAuth.updateSession({ pendingCellId: cell.id, pendingCellName: cell.name });
+
+        window.location.href = 'next.html';
+      }
+
+      // ── DOM refs ──────────────────────────────────────────────────────────────
+      const loginForm       = document.querySelector('#loginForm');
+      const registerForm    = document.querySelector('#registerForm');
+      const registerWrapper = document.querySelector('#registerWrapper');
+      const profileStep2    = document.querySelector('#profileStep2Form');
+      const forgotForm      = document.querySelector('#forgotForm');
+      const toggleBtn       = document.querySelector('#toggleFormBtn');
+      const showForgotBtn   = document.querySelector('#showForgotBtn');
+      const backToLoginBtn  = document.querySelector('#backToLoginBtn');
+      const cardTitle       = document.querySelector('#cardTitle');
+      const cardDesc        = document.querySelector('#cardDesc');
+      const slideWrapper    = document.querySelector('#slideWrapper');
+
+      let cellChoice = null;
+      let pendingUser = null;
+
+      // Célula toggle
+      document.getElementById('cellYes').addEventListener('click', () => {
+        cellChoice = 'yes';
+        document.getElementById('cellYes').classList.add('active');
+        document.getElementById('cellNo').classList.remove('active');
+        document.getElementById('profCell').value = 'yes';
       });
 
-      // Lógica de Cadastro
-      registerForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        document.querySelector("#regMessage").textContent = "Criando conta...";
-        const name = document.querySelector("#regName").value.trim();
-        const email = document.querySelector("#regEmail").value.trim();
-        const password = document.querySelector("#regPassword").value;
+      document.getElementById('cellNo').addEventListener('click', () => {
+        cellChoice = 'no';
+        document.getElementById('cellNo').classList.add('active');
+        document.getElementById('cellYes').classList.remove('active');
+        document.getElementById('profCell').value = 'no';
+      });
+
+      // ── Toggle login / register ──────────────────────────────────────────────
+      toggleBtn.addEventListener('click', () => {
+        const isLogin = loginForm.style.display !== 'none';
+        loginForm.style.display       = isLogin ? 'none' : 'grid';
+        forgotForm.style.display      = 'none';
+        registerWrapper.style.display = isLogin ? 'block' : 'none';
+        slideWrapper.classList.remove('shifted');
+        cardTitle.textContent = isLogin ? 'Criar Conta' : 'Entrar';
+        cardDesc.textContent  = isLogin ? 'Preencha seus dados para começar.' : 'Use uma conta cadastrada ou crie a sua.';
+        toggleBtn.textContent = isLogin ? 'Já tenho conta. Fazer login' : 'Não tem conta? Cadastre-se';
+        toggleBtn.style.display = 'block';
+      });
+
+      // ── Forgot ───────────────────────────────────────────────────────────────
+      showForgotBtn.addEventListener('click', e => {
+        e.preventDefault();
+        loginForm.style.display       = 'none';
+        registerWrapper.style.display = 'none';
+        forgotForm.style.display      = 'grid';
+        toggleBtn.style.display       = 'none';
+        cardTitle.textContent = 'Recuperar Senha';
+        cardDesc.textContent  = 'Enviaremos um link de recuperação para o seu e-mail.';
+      });
+
+      backToLoginBtn.addEventListener('click', () => {
+        forgotForm.style.display  = 'none';
+        loginForm.style.display   = 'grid';
+        toggleBtn.style.display   = 'block';
+        cardTitle.textContent     = 'Entrar';
+        cardDesc.textContent      = 'Use uma conta cadastrada ou crie a sua.';
+        document.querySelector('#forgotMessage').textContent = '';
+      });
+
+      // ── Login ────────────────────────────────────────────────────────────────
+      loginForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        document.querySelector('#message').textContent = 'Carregando...';
+        const user = await NextAuth.login(
+          document.querySelector('#email').value.trim(),
+          document.querySelector('#password').value
+        );
+        if (!user) {
+          document.querySelector('#message').textContent = 'E-mail ou senha inválidos.';
+          return;
+        }
+        checkCellPopup(user);
+      });
+
+      // ── Register step 1 ──────────────────────────────────────────────────────
+      registerForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        document.querySelector('#regMessage').textContent = 'Criando conta...';
+        const name     = document.querySelector('#regName').value.trim();
+        const email    = document.querySelector('#regEmail').value.trim();
+        const password = document.querySelector('#regPassword').value;
 
         const user = await NextAuth.register(name, email, password);
         if (!user) {
-          document.querySelector("#regMessage").textContent = "Erro ao criar conta. Tente outro e-mail.";
+          document.querySelector('#regMessage').textContent = 'Erro ao criar conta. Tente outro e-mail.';
           return;
         }
-        window.location.href = "next.html"; // Redireciona logado
+        pendingUser = user;
+
+        // Slide para etapa 2 (etapa 2 se torna visível via CSS)
+        cardTitle.textContent = 'Quase lá! 👋';
+        cardDesc.textContent  = 'Conta criada. Nos conta um pouco sobre você.';
+        slideWrapper.classList.add('shifted');
       });
 
-      // Lógica de Recuperação de Senha
-      forgotForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        const msg = document.querySelector("#forgotMessage");
-        msg.textContent = "Enviando...";
-        msg.style.color = "var(--ink)";
-        
-        await NextAuth.resetPassword(document.querySelector("#forgotEmail").value.trim());
-        
-        msg.textContent = "Se o e-mail estiver cadastrado, você receberá um link de recuperação.";
-        msg.style.color = "#10b981"; // Cor verde
-        document.querySelector("#forgotEmail").value = "";
+      // ── Register step 2 (perfil) ─────────────────────────────────────────────
+      profileStep2.addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!cellChoice) {
+          document.querySelector('#profMessage').textContent = 'Selecione se você participa de célula.';
+          return;
+        }
+
+        const age     = parseInt(document.querySelector('#profAge').value) || null;
+        const phone   = document.querySelector('#profPhone').value.trim();
+        const city    = document.querySelector('#profCity').value;
+        const hasCell = cellChoice === 'yes';
+
+        NextAuth.updateSession({ age, phone, city, hasCell });
+
+        if (pendingUser) {
+          await NextDB.save('next_users', { ...pendingUser, age, phone, city, hasCell });
+        }
+
+        const freshUser = NextAuth.currentUser();
+
+        if (!hasCell) {
+          showCellPopup(freshUser || { city, id: pendingUser?.id, name: pendingUser?.name });
+        } else {
+          window.location.href = 'next.html';
+        }
+      });
+
+      // ── Forgot submit ────────────────────────────────────────────────────────
+      forgotForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const msg = document.querySelector('#forgotMessage');
+        msg.textContent = 'Enviando...';
+        msg.style.color = 'var(--ink)';
+        await NextAuth.resetPassword(document.querySelector('#forgotEmail').value.trim());
+        msg.textContent = 'Se o e-mail estiver cadastrado, você receberá um link de recuperação.';
+        msg.style.color = '#10b981';
+        document.querySelector('#forgotEmail').value = '';
       });
     </script>
   </body>

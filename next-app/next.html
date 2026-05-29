@@ -618,6 +618,18 @@
             </form>
 
             <article class="panel-form" style="grid-column: 1 / -1;">
+              <h3>📅 Confirmação Semanal de Células</h3>
+              <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">Confirme a célula desta semana para desbloquear a próxima na agenda dos jovens.</p>
+              <div class="admin-list" id="cellWeekPanel"></div>
+            </article>
+
+            <article class="panel-form" style="grid-column: 1 / -1;">
+              <h3>🔥 Jovens Interessados em Células</h3>
+              <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">Jovens que clicaram em Participar e aguardam confirmação da liderança.</p>
+              <div class="admin-list" id="cellPendingAdminList"></div>
+            </article>
+
+            <article class="panel-form" style="grid-column: 1 / -1;">
               <h3>Novas Inscrições (Quero Servir)</h3>
               <div class="admin-list" id="applicationsAdminList"></div>
             </article>
@@ -700,6 +712,44 @@
     
     <script src="supabase-config.js"></script>
     
+    <script>
+      // Células disponíveis — compartilhadas com next.js
+      window.NEXT_CELLS = [
+        {
+          id: 'cell_serra_boulevard',
+          name: 'Célula Boulevard',
+          city: 'Serra',
+          leaders: ['Matheus', 'Julya Lemes'],
+          day: 'Todas as terças',
+          weekdayNum: 2,
+          time: '20h00',
+          location: 'Boulevard Lagoa',
+          whatsapp: null,
+        },
+        {
+          id: 'cell_vitoria_jc',
+          name: 'Célula JC',
+          city: 'Vitória',
+          leaders: ['Matheus Santana', 'Gabriel Gaiger', 'Nayuri', 'Arthur Mendes'],
+          day: 'Todas as terças',
+          weekdayNum: 2,
+          time: '20h00',
+          location: 'Edifício Capri',
+          whatsapp: null,
+        },
+        {
+          id: 'cell_vilavelha_farol',
+          name: 'Célula Farol',
+          city: 'Vila Velha',
+          leaders: ['Rebeca Martins', 'Felipe Souza'],
+          day: 'Todas as quintas',
+          weekdayNum: 4,
+          time: '19h30',
+          location: 'Praia de Itaparica',
+          whatsapp: null,
+        },
+      ];
+    </script>
     <script src="next.js"></script>
   </body>
 </html>
