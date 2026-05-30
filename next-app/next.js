@@ -253,6 +253,44 @@ function formatTimeAgo(timestamp) {
   return `${Math.round(hours / 24)}d`;
 }
 
+const LAST_SEEN_KEY = `next_last_seen_msgs:${currentUser?.id}`;
+
+function getLastSeenTimestamp() {
+  return Number(localStorage.getItem(LAST_SEEN_KEY)) || 0;
+}
+
+function markMessagesAsSeen() {
+  localStorage.setItem(LAST_SEEN_KEY, String(Date.now()));
+  updateUnreadBadge();
+}
+
+function updateUnreadBadge() {
+  const lastSeen = getLastSeenTimestamp();
+  const navConversa = document.querySelector('[data-target="conversa"]');
+  if (!navConversa) return;
+
+  // Conta mensagens para mim que chegaram depois do último acesso
+  const unread = getMessages().filter(m => {
+    if (m.senderId === currentUser.id) return false; // próprias não contam
+    const threadMine = m.threadId && m.threadId.includes(currentUser.id);
+    const isLeader = ["lider", "pastor", "missionaria", "admin"].includes(currentUser.role);
+    const relevant = isLeader
+      ? leaderNames.some(n => currentUser.name?.toLowerCase().includes(n.toLowerCase()) && m.leaderName === n || m.leaderName === currentUser.name)
+      : threadMine;
+    return relevant && m.createdAt > lastSeen;
+  }).length;
+
+  // Remove badge anterior
+  navConversa.querySelector('.nav-badge')?.remove();
+
+  if (unread > 0) {
+    const badge = document.createElement('span');
+    badge.className = 'nav-badge';
+    badge.textContent = unread > 9 ? '9+' : String(unread);
+    navConversa.appendChild(badge);
+  }
+}
+
 function setupPermissions() {
   navButtons.forEach((button) => {
     button.classList.toggle("hidden", !canView(button.dataset.target));
@@ -281,7 +319,8 @@ function setView(target) {
   pageTitle.textContent = nextView.dataset.title || "Next";
   document.body.classList.remove("menu-open");
 
-  if (target === "mensagens") renderLeaderInbox();
+  if (target === "conversa") markMessagesAsSeen();
+  if (target === "mensagens") { renderLeaderInbox(); markMessagesAsSeen(); }
   if (target === "gestao") renderAdminLists();
   if (target === "culto") renderCultStatus();
   if (target === "escalas") {
@@ -300,6 +339,23 @@ function setupSessionUi() {
     day: "numeric",
     month: "long",
   });
+
+  // Ajusta label do quick-card de conversa conforme o role
+  const isLeader = ["lider", "pastor", "missionaria", "admin", "sublider"].includes(currentUser.role);
+  const conversaCard = document.querySelector('.quick-card[data-target="conversa"]');
+  if (conversaCard) {
+    const label = conversaCard.querySelector('strong');
+    if (label) label.textContent = isLeader ? "Falar com Jovens" : "Falar com Líderes";
+  }
+
+  // Ajusta o título da seção de conversa na sidebar também
+  const navConversa = document.querySelector('[data-target="conversa"]');
+  if (navConversa) {
+    const txt = navConversa.childNodes[0];
+    if (txt && txt.nodeType === Node.TEXT_NODE) {
+      txt.textContent = isLeader ? "Jovens" : "Conversar";
+    }
+  }
 }
 
 function renderFeed() {
@@ -700,7 +756,7 @@ function addCellEventsForUser(cellId, userId) {
 }
 
 function selectAgendaItem(index) {
-  const item = getEvents().sort((a, b) => Number(a.date) - Number(b.date))[index];
+  const item = _lastFilteredEvents[index];
   if (!item) return;
 
   document.querySelectorAll(".agenda-card").forEach((card) => {
@@ -1316,6 +1372,7 @@ function getBaseProfile() {
     responsible: currentUser.responsible || "",
     role: roleLabels[currentUser.role] || "Membro Next",
     photo: currentUser.photo || "",
+    city: currentUser.city || "",
   };
 }
 
@@ -1330,6 +1387,7 @@ function getProfileFromStorage() {
       phone: currentUser.phone || "",
       birthday: currentUser.birthday || "",
       responsible: currentUser.responsible || "",
+      city: currentUser.city || "",
     };
     return { ...getBaseProfile(), ...fromSession, ...localProfile };
   } catch {
@@ -1400,6 +1458,8 @@ function fillProfileForm(profile) {
   }
 
   document.querySelector("#profileRole").value = profile.role || roleLabels[currentUser.role] || "Membro Next";
+  const citySelect = document.querySelector("#profileCity");
+  if (citySelect) citySelect.value = profile.city || "";
   profilePhotoData = profile.photo || "";
   applyProfile(profile);
 }
@@ -1414,7 +1474,8 @@ function saveProfile(event) {
     responsible: document.querySelector("#profileResponsible").value.trim(),
     role: document.querySelector("#profileRole").value.trim() || roleLabels[currentUser.role],
     photo: profilePhotoData,
-  };
+    city: document.querySelector("#profileCity")?.value || "",
+    };
 
   localStorage.setItem(profileStorageKey, JSON.stringify(profile));
   authApi?.updateSession(profile);
@@ -2523,6 +2584,7 @@ async function boot() {
   renderChatContacts();
   renderYoungChat();
   renderLeaderInbox();
+  updateUnreadBadge();
   renderMyScales();
   if (typeof renderAgendaFilterOptions === 'function') renderAgendaFilterOptions();
   if (typeof renderAdminLists === 'function') renderAdminLists();
@@ -2569,6 +2631,7 @@ async function boot() {
         if (!active) return;
         if (active.id === 'conversa') renderYoungChat();
         if (active.id === 'mensagens') renderLeaderInbox();
+        updateUnreadBadge();
         if (active.id === 'grupos') renderGroupChat();
         if (active.id === 'home') { renderFeed(); renderCultStatus(); }
         if (active.id === 'agenda') renderCalendar();

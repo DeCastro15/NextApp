@@ -100,6 +100,10 @@ const NextAuth = (() => {
     window.location.href = 'index.html';
   }
 
+  // TODO (migração Supabase): next_celula_popup_snoozed_until está em localStorage.
+  // Ao migrar, mover o campo `celula_popup_snoozed_until` para a coluna do usuário
+  // no banco (ex: next_users.celula_snooze_until: timestamp).
+  // Enquanto mock: comportamento aceitável — snooze some ao limpar cache.
   async function resetPassword(email) {
     const client = window.originalSupabaseClient || supabaseClient;
 
