@@ -1,0 +1,18 @@
+{
+  "name": "Next — Juventude AD Fonte de Vida",
+  "short_name": "Next",
+  "description": "App da Juventude Next — AD Fonte de Vida",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#080c18",
+  "theme_color": "#2f73f8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "assets/next-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

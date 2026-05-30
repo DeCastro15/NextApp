@@ -1,5 +1,7 @@
 <!doctype html>
 <html lang="pt-BR">
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2f73f8" />
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -934,6 +936,11 @@
         msg.style.color = '#10b981';
         document.querySelector('#forgotEmail').value = '';
       });
+    </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js');
+      }
     </script>
   </body>
 </html>
