@@ -3179,7 +3179,7 @@ async function boot() {
   
   renderGroupList();
   renderGroupChat();
-  renderCheckList();
+  renderChecklist();
 
   renderFeed();
   renderBirthdays();
