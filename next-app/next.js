@@ -29,13 +29,13 @@ const leaderPhotos = {
 const cultStages = ["inativo", "Louvor", "Pregação", "Apelo", "Finalizado"];
 
 const permissionsByRole = {
-  jovem: ["home", "agenda", "conteudo", "loja", "oracao", "conversa", "servir", "configuracoes"],
-  responsavel: ["home", "agenda", "culto", "configuracoes"],
-  lider: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "configuracoes"],
-  sublider: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "escalas", "gestao", "configuracoes"],
-  pastor: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "configuracoes"],
-  missionaria: ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "configuracoes"],
-  admin: ["home", "agenda", "culto", "conteudo", "loja", "gestao", "configuracoes", "servos"],
+  jovem:      ["home", "agenda", "conteudo", "loja", "oracao", "conversa", "servir", "biblerats", "configuracoes"],
+  responsavel:["home", "agenda", "culto", "biblerats", "configuracoes"],
+  lider:      ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "biblerats", "configuracoes"],
+  sublider:   ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "escalas", "gestao", "biblerats", "configuracoes"],
+  pastor:     ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "biblerats", "configuracoes"],
+  missionaria:["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "biblerats", "configuracoes"],
+  admin:      ["home", "agenda", "culto", "conteudo", "loja", "gestao", "biblerats", "configuracoes", "servos"],
 };
 
 const functionsMap = {
@@ -291,6 +291,33 @@ function updateUnreadBadge() {
   }
 }
 
+// ADICIONAR após updateUnreadBadge()
+const LAST_SEEN_PRAYER_KEY = `next_last_seen_prayer:${currentUser?.id}`;
+
+function updatePrayerBadge() {
+  const navOracao = document.querySelector('[data-target="oracao"]');
+  if (!navOracao) return;
+
+  const lastSeen = Number(localStorage.getItem(LAST_SEEN_PRAYER_KEY)) || 0;
+  const hasUnread = getPrayers().some(p =>
+    p.senderId === currentUser.id && p.reply && (p.repliedAt || 0) > lastSeen
+  );
+
+  navOracao.querySelector('.nav-badge')?.remove();
+
+  if (hasUnread) {
+    const badge = document.createElement('span');
+    badge.className = 'nav-badge';
+    badge.textContent = '!';
+    navOracao.appendChild(badge);
+  }
+}
+
+function markPrayerAsSeen() {
+  localStorage.setItem(LAST_SEEN_PRAYER_KEY, String(Date.now()));
+  updatePrayerBadge();
+}
+
 function setupPermissions() {
   navButtons.forEach((button) => {
     button.classList.toggle("hidden", !canView(button.dataset.target));
@@ -320,6 +347,8 @@ function setView(target) {
   document.body.classList.remove("menu-open");
 
   if (target === "conversa") markMessagesAsSeen();
+  if (target === "oracao") markPrayerAsSeen();
+  if (target === "grupos") { renderGroupList(); renderGroupChat(); renderChecklist(); }
   if (target === "mensagens") { renderLeaderInbox(); markMessagesAsSeen(); }
   if (target === "gestao") renderAdminLists();
   if (target === "culto") renderCultStatus();
@@ -330,6 +359,7 @@ function setView(target) {
   if (target === "servos") {
     renderMyScales();
   }
+  if (target === "biblerats") renderBibleRats();
 }
 
 function setupSessionUi() {
@@ -358,6 +388,30 @@ function setupSessionUi() {
   }
 }
 
+const WELCOME_VERSES = [
+  '"Porque eu sei os planos que tenho para vocês, diz o Senhor, planos de fazê-los prosperar." — Jr 29:11',
+  '"Não temas, porque eu sou contigo; não te assombres, porque eu sou teu Deus." — Is 41:10',
+  '"Posso todas as coisas naquele que me fortalece." — Fp 4:13',
+  '"Confia no Senhor de todo o teu coração e não te estribes no teu próprio entendimento." — Pv 3:5',
+  '"Buscai primeiro o reino de Deus e a sua justiça, e todas essas coisas vos serão acrescentadas." — Mt 6:33',
+];
+
+function maybeShowWelcome() {
+  if (!currentUser?.createdAt) return;
+  const isNew = Date.now() - Number(currentUser.createdAt) < 3 * 60 * 1000; // 3 min
+  if (!isNew) return;
+
+  const modal = document.getElementById('welcomeModal');
+  if (!modal) return;
+
+  document.getElementById('welcomeName').textContent =
+    `Bem-vindo(a), ${currentUser.name?.split(' ')[0] || 'jovem'}! 🔥`;
+  document.getElementById('welcomeVerse').textContent =
+    WELCOME_VERSES[Math.floor(Math.random() * WELCOME_VERSES.length)];
+
+  modal.style.display = 'grid';
+}
+
 function renderFeed() {
   document.querySelector("#feedList").innerHTML = getPosts()
     .map(
@@ -373,6 +427,53 @@ function renderFeed() {
       `,
     )
     .join("");
+}
+
+function renderBirthdays() {
+  const container = document.querySelector('#birthdayCard');
+  if (!container) return;
+
+  const now = new Date();
+  const todayMonth = now.getMonth() + 1;
+  const todayDay   = now.getDate();
+
+  // Janela de 7 dias
+  const upcoming = getUsers().filter(u => {
+    if (!u.birthday) return false;
+    const [, month, day] = u.birthday.split('-').map(Number);
+    if (!month || !day) return false;
+
+    const bdThisYear = new Date(now.getFullYear(), month - 1, day);
+    const diffMs = bdThisYear - new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diffDays = Math.round(diffMs / 86400000);
+    return diffDays >= 0 && diffDays <= 6;
+  }).sort((a, b) => {
+    const dayA = Number(a.birthday.split('-')[2]);
+    const dayB = Number(b.birthday.split('-')[2]);
+    return dayA - dayB;
+  });
+
+  if (!upcoming.length) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <span style="font-size:1.4rem;">🎂</span>
+      <div>
+        <p class="eyebrow" style="margin:0;">Aniversariantes da semana</p>
+        <p style="margin:4px 0 0; font-weight:700; font-size:0.94rem; color:var(--ink);">
+          ${upcoming.map(u => {
+            const [, month, day] = u.birthday.split('-').map(Number);
+            const isToday = Number(day) === todayDay && Number(month) === todayDay;
+            return `${u.name.split(' ')[0]}${isToday ? ' 🎉' : ` (dia ${day})`}`;
+          }).join(' · ')}
+        </p>
+      </div>
+    </div>
+  `;
 }
 
 function renderAgendaFilterOptions() {
@@ -2004,6 +2105,508 @@ function renderMyScales() {
   }
 }
 
+// ══════════════════════════════════════════════════
+//  BIBLERATS — feed de fotos diárias
+// ══════════════════════════════════════════════════
+
+const BR_COLLECTION = 'next_biblerats_posts';
+let brPhotoBase64 = '';
+
+function getBRPosts() {
+  return getAll(BR_COLLECTION, []).sort((a, b) => b.createdAt - a.createdAt);
+}
+
+function brTodayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+function brCurrentUserPostedToday() {
+  const today = brTodayKey();
+  return getBRPosts().some(p => p.userId === currentUser.id && p.dayKey === today);
+}
+
+function brRelativeTime(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60)   return 'agora mesmo';
+  if (diff < 3600) return `${Math.floor(diff/60)}min`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h`;
+  return `${Math.floor(diff/86400)}d`;
+}
+
+function renderBRStories() {
+  const el = document.getElementById('brStoriesRow');
+  if (!el) return;
+
+  const today = brTodayKey();
+  const users = getUsers();
+  const posts = getBRPosts();
+
+  // Usuários que postaram hoje
+  const postedToday = new Set(
+    posts.filter(p => p.dayKey === today).map(p => p.userId)
+  );
+
+  const iPosted = postedToday.has(currentUser.id);
+
+  const stories = users
+    .filter(u => postedToday.has(u.id))
+    .slice(0, 12);
+
+  // Avatar do usuário atual (primeiro, com anel diferente)
+  const myRing = iPosted
+    ? 'border:2.5px solid var(--blue);'
+    : 'border:2.5px dashed #94a3b8;';
+
+  el.innerHTML = `
+    <button type="button" id="brMyStory" style="
+      display:flex; flex-direction:column; align-items:center; gap:5px;
+      background:none; border:none; cursor:pointer; flex-shrink:0;">
+      <div style="
+        width:52px; height:52px; border-radius:50%; ${myRing}
+        background:var(--ink); color:#fff; display:grid; place-items:center;
+        font-family:'Syne',sans-serif; font-weight:900; font-size:0.9rem;
+        box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+        ${iPosted ? '✓' : '+'}
+      </div>
+      <span style="font-size:0.68rem; font-weight:700; color:var(--muted);">
+        ${iPosted ? 'Você' : 'Postar'}
+      </span>
+    </button>
+    ${stories
+      .filter(u => u.id !== currentUser.id)
+      .map(u => {
+        const post = posts.find(p => p.userId === u.id && p.dayKey === today);
+        return `
+          <button type="button" data-br-story="${u.id}" style="
+            display:flex; flex-direction:column; align-items:center; gap:5px;
+            background:none; border:none; cursor:pointer; flex-shrink:0;">
+            <div style="
+              width:52px; height:52px; border-radius:50%;
+              border:2.5px solid var(--blue);
+              overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+              ${post?.photo
+                ? `<img src="${post.photo}" style="width:100%;height:100%;object-fit:cover;" alt="" />`
+                : `<div style="width:100%;height:100%;background:var(--ink);display:grid;place-items:center;
+                             font-family:'Syne',sans-serif;font-weight:900;font-size:0.9rem;color:#fff;">
+                     ${initials(u.name)}
+                   </div>`
+              }
+            </div>
+            <span style="font-size:0.68rem; font-weight:700; color:var(--muted); max-width:52px;
+                         overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+              ${u.name.split(' ')[0]}
+            </span>
+          </button>
+        `;
+      }).join('')}
+  `;
+
+  document.getElementById('brMyStory')?.addEventListener('click', () => {
+    if (!brCurrentUserPostedToday()) {
+      document.getElementById('brPostModal').style.display = 'grid';
+    } else {
+      // Vai para o post do dia do próprio usuário
+      const myPost = getBRPosts().find(p => p.userId === currentUser.id && p.dayKey === brTodayKey());
+      if (myPost?.photo) openBRLightbox(myPost.photo);
+    }
+  });
+
+  el.querySelectorAll('[data-br-story]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const uid = btn.dataset.brStory;
+      const post = getBRPosts().find(p => p.userId === uid && p.dayKey === brTodayKey());
+      if (post?.photo) openBRLightbox(post.photo);
+    });
+  });
+}
+
+function renderBRFeed() {
+  const el = document.getElementById('brFeed');
+  if (!el) return;
+
+  const posts = getBRPosts().slice(0, 30);
+
+  if (!posts.length) {
+    el.innerHTML = `
+      <div style="text-align:center; padding:40px 20px; color:var(--muted);">
+        <p style="font-size:2rem; margin:0 0 8px;">📸</p>
+        <p style="font-weight:700;">Nenhuma postagem ainda.</p>
+        <p style="font-size:0.88rem;">Seja o primeiro a compartilhar seu momento com Deus hoje!</p>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = posts.map(post => `
+    <article style="
+      border:1px solid var(--line); border-radius:14px;
+      background:var(--surface); overflow:hidden;
+      box-shadow:0 2px 12px rgba(13,17,23,0.05);">
+
+      <!-- Header do post -->
+      <div style="
+        display:flex; align-items:center; gap:10px;
+        padding:12px 14px 10px;">
+        <div style="
+          width:38px; height:38px; border-radius:50%; flex-shrink:0;
+          background:var(--ink); color:#fff; display:grid; place-items:center;
+          font-family:'Syne',sans-serif; font-weight:900; font-size:0.82rem;
+          overflow:hidden;">
+          ${post.userPhoto
+            ? `<img src="${post.userPhoto}" style="width:100%;height:100%;object-fit:cover;" alt="" />`
+            : initials(post.userName)}
+        </div>
+        <div style="flex:1; min-width:0;">
+          <strong style="font-size:0.90rem; display:block; line-height:1.2;">
+            ${post.userName}
+          </strong>
+          <span style="font-size:0.74rem; color:var(--muted);">
+            ${brRelativeTime(post.createdAt)}
+          </span>
+        </div>
+        ${canManage() ? `
+          <button type="button" data-br-delete="${post.id}" style="
+            background:none; border:none; cursor:pointer; color:var(--muted);
+            font-size:0.78rem; padding:4px 8px; border-radius:6px;
+            border:1px solid var(--line);">
+            Remover
+          </button>` : ''}
+      </div>
+
+      <!-- Foto -->
+      ${post.photo ? `
+        <div style="background:#000; cursor:zoom-in;" data-br-lightbox="${post.photo}">
+          <img src="${post.photo}" alt="Post de ${post.userName}"
+               style="width:100%; max-height:420px; object-fit:cover; display:block;" />
+        </div>` : ''}
+
+      <!-- Caption + versículo -->
+      <div style="padding:12px 14px 14px; display:grid; gap:6px;">
+        ${post.caption ? `
+          <p style="margin:0; font-size:0.92rem; line-height:1.55; color:var(--ink);">
+            <strong>${post.userName.split(' ')[0]}</strong> ${post.caption}
+          </p>` : ''}
+        ${post.verse ? `
+          <p style="
+            margin:0; font-size:0.80rem; color:var(--blue);
+            font-weight:700; padding:6px 10px;
+            background:rgba(47,115,248,0.07); border-radius:6px;
+            border-left:3px solid var(--blue);">
+            📖 ${post.verse}
+          </p>` : ''}
+
+        <!-- Curtidas -->
+        <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+          <button type="button" data-br-like="${post.id}" style="
+            background:none; border:none; cursor:pointer; padding:0;
+            font-size:1.1rem; line-height:1; display:flex; align-items:center; gap:4px;">
+            ${(post.likes || []).includes(currentUser.id) ? '🔥' : '🤍'}
+            <span style="font-size:0.80rem; font-weight:700; color:var(--muted);">
+              ${(post.likes || []).length || ''}
+            </span>
+          </button>
+        </div>
+      </div>
+    </article>
+  `).join('');
+
+  // Lightbox nas fotos
+  el.querySelectorAll('[data-br-lightbox]').forEach(el => {
+    el.addEventListener('click', () => openBRLightbox(el.dataset.brLightbox));
+  });
+
+  // Curtir
+  el.querySelectorAll('[data-br-like]').forEach(btn => {
+    btn.addEventListener('click', () => brToggleLike(btn.dataset.brLike));
+  });
+
+  // Remover (líderes)
+  el.querySelectorAll('[data-br-delete]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!confirm('Remover este post?')) return;
+      dbApi?.remove(BR_COLLECTION, btn.dataset.brDelete);
+      renderBRFeed();
+      renderBRStories();
+    });
+  });
+}
+
+function brToggleLike(postId) {
+  const posts = getBRPosts();
+  const post  = posts.find(p => p.id === postId);
+  if (!post) return;
+
+  const likes = post.likes || [];
+  if (likes.includes(currentUser.id)) {
+    post.likes = likes.filter(id => id !== currentUser.id);
+  } else {
+    post.likes = [...likes, currentUser.id];
+  }
+  dbApi?.save(BR_COLLECTION, post);
+  renderBRFeed();
+}
+
+function openBRLightbox(src) {
+  const lb = document.getElementById('brLightbox');
+  document.getElementById('brLightboxImg').src = src;
+  lb.style.display = 'grid';
+}
+
+function bindBREvents() {
+  // Abrir modal
+  document.getElementById('brOpenPostBtn')?.addEventListener('click', () => {
+    if (brCurrentUserPostedToday()) {
+      document.getElementById('brPostMsg').textContent = 'Você já postou hoje! Volte amanhã. 🔥';
+      return;
+    }
+    document.getElementById('brPostModal').style.display = 'grid';
+  });
+
+  // Fechar modal
+  document.getElementById('brCloseModal')?.addEventListener('click', () => {
+    document.getElementById('brPostModal').style.display = 'none';
+  });
+
+  // Preview da foto
+  document.getElementById('brPhotoInput')?.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Comprime para max 800px antes de salvar em base64
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 800;
+        const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+        canvas.width  = img.width  * ratio;
+        canvas.height = img.height * ratio;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        brPhotoBase64 = canvas.toDataURL('image/jpeg', 0.75);
+
+        const preview = document.getElementById('brPhotoPreview');
+        const label   = document.getElementById('brPhotoLabel');
+        preview.src   = brPhotoBase64;
+        preview.style.display = 'block';
+        label.querySelector('span').style.display  = 'none';
+        label.querySelector('span:last-of-type')?.style && (label.querySelector('span').style.display = 'none');
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Submeter post
+  document.getElementById('brSubmitPost')?.addEventListener('click', () => {
+    const caption = document.getElementById('brCaption').value.trim();
+    const verse   = document.getElementById('brVerse').value.trim();
+    const msg     = document.getElementById('brPostMsg');
+
+    if (!brPhotoBase64 && !caption) {
+      msg.style.color = '#b91c1c';
+      msg.textContent = 'Adicione uma foto ou escreva algo.';
+      return;
+    }
+
+    const profile = getProfileFromStorage();
+
+    dbApi?.save(BR_COLLECTION, {
+      id:        `br_${Date.now()}`,
+      userId:    currentUser.id,
+      userName:  currentUser.name,
+      userPhoto: profile.photo || '',
+      photo:     brPhotoBase64,
+      caption,
+      verse,
+      dayKey:    brTodayKey(),
+      likes:     [],
+      createdAt: Date.now(),
+    });
+
+    // Reset
+    brPhotoBase64 = '';
+    document.getElementById('brCaption').value = '';
+    document.getElementById('brVerse').value   = '';
+    document.getElementById('brPhotoPreview').style.display = 'none';
+    document.getElementById('brPostModal').style.display = 'none';
+    document.getElementById('brPhotoInput').value = '';
+
+    renderBRFeed();
+    renderBRStories();
+  });
+
+  // Fechar lightbox ao clicar fora
+  document.getElementById('brLightbox')?.addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+  });
+}
+
+function renderBibleRats() {
+  renderBRStories();
+  renderBRFeed();
+}
+
+// ══════════════════════════════════════════════════
+//  CHECKLIST DE SERVOS
+// ══════════════════════════════════════════════════
+
+const CL_KEY = 'next_checklist';
+
+function getChecklist() {
+  return getAll(CL_KEY, []);
+}
+
+function getTodayEventId() {
+  const today = new Date().getDate();
+  return getEvents().find(e => Number(e.date) === today)?.id || 'culto_geral';
+}
+
+function renderChecklist() {
+  const container = document.getElementById('checklistItems');
+  const emptyEl   = document.getElementById('checklistEmpty');
+  const adminForm  = document.getElementById('checklistAdminForm');
+  if (!container) return;
+
+  if (adminForm) adminForm.style.display = canManage() ? 'block' : 'none';
+
+  const eventId = getTodayEventId();
+  const items   = getChecklist().filter(i => i.eventId === eventId);
+
+  if (!items.length) {
+    container.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  const total = items.length;
+  const done  = items.filter(i => i.completedBy && Object.keys(i.completedBy).length > 0).length;
+
+  container.innerHTML = `
+    <!-- Barra de progresso -->
+    <div style="margin-bottom:4px;">
+      <div style="
+        display:flex; justify-content:space-between; align-items:center;
+        margin-bottom:6px;">
+        <span style="font-size:0.80rem; font-weight:700; color:var(--muted);">
+          Progresso do culto
+        </span>
+        <span style="font-size:0.80rem; font-weight:800; color:var(--blue);">
+          ${done}/${total}
+        </span>
+      </div>
+      <div class="progress-bar">
+        <span style="width:${Math.round((done/total)*100)}%;
+                     background:${done===total ? 'var(--green)' : 'var(--blue)'};
+                     transition:width 400ms ease;">
+        </span>
+      </div>
+    </div>
+
+    ${items.map(item => {
+      const isDone    = item.completedBy && Object.keys(item.completedBy).length > 0;
+      const iDidIt    = item.completedBy?.[currentUser.id];
+      const doerNames = Object.values(item.completedBy || {}).join(', ');
+
+      return `
+        <div style="
+          display:flex; align-items:center; gap:12px;
+          padding:12px 14px; border:1.5px solid ${isDone ? 'rgba(16,185,129,0.35)' : 'var(--line)'};
+          border-radius:10px; background:${isDone ? 'rgba(16,185,129,0.05)' : 'var(--surface)'};
+          transition:all 200ms;">
+
+          <button type="button" data-cl-toggle="${item.id}" style="
+            width:26px; height:26px; flex-shrink:0; border-radius:50%;
+            border:2px solid ${isDone ? '#10b981' : 'var(--line)'};
+            background:${isDone ? '#10b981' : 'transparent'};
+            color:#fff; font-size:0.8rem; cursor:pointer;
+            display:grid; place-items:center;
+            transition:all 200ms;">
+            ${isDone ? '✓' : ''}
+          </button>
+
+          <div style="flex:1; min-width:0;">
+            <p style="
+              margin:0; font-size:0.90rem; font-weight:${isDone ? '600' : '700'};
+              color:${isDone ? 'var(--muted)' : 'var(--ink)'};
+              text-decoration:${isDone ? 'line-through' : 'none'};">
+              ${item.task}
+            </p>
+            ${isDone ? `
+              <span style="font-size:0.74rem; color:var(--green); font-weight:700;">
+                ✓ ${doerNames}
+              </span>` : ''}
+          </div>
+
+          ${canManage() ? `
+            <button type="button" data-cl-delete="${item.id}" style="
+              background:none; border:none; cursor:pointer;
+              color:var(--muted); font-size:1rem; padding:2px 4px;">
+              ×
+            </button>` : ''}
+        </div>
+      `;
+    }).join('')}
+  `;
+
+  // Marcar como feito
+  container.querySelectorAll('[data-cl-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id    = btn.dataset.clToggle;
+      const items = getChecklist();
+      const item  = items.find(i => i.id === id);
+      if (!item) return;
+
+      if (item.completedBy?.[currentUser.id]) {
+        delete item.completedBy[currentUser.id];
+      } else {
+        item.completedBy = {
+          ...(item.completedBy || {}),
+          [currentUser.id]: currentUser.name.split(' ')[0],
+        };
+      }
+      dbApi?.save(CL_KEY, item);
+      renderChecklist();
+    });
+  });
+
+  // Remover (líderes)
+  container.querySelectorAll('[data-cl-delete]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      dbApi?.remove(CL_KEY, btn.dataset.clDelete);
+      renderChecklist();
+    });
+  });
+}
+
+function bindChecklistEvents() {
+  document.getElementById('checklistAddBtn')?.addEventListener('click', () => {
+    const input = document.getElementById('checklistTaskInput');
+    const task  = input?.value.trim();
+    if (!task) return;
+
+    dbApi?.save(CL_KEY, {
+      id:          `cl_${Date.now()}`,
+      eventId:     getTodayEventId(),
+      task,
+      completedBy: {},
+      createdAt:   Date.now(),
+    });
+
+    input.value = '';
+    renderChecklist();
+  });
+
+  document.getElementById('checklistTaskInput')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('checklistAddBtn')?.click();
+    }
+  });
+}
+
 function bindEvents() {
   navButtons.forEach((button) => button.addEventListener("click", () => setView(button.dataset.target)));
 
@@ -2564,27 +3167,34 @@ function bindEvents() {
       alert(`Mensagem enviada para ${userName}! Acompanhe pela aba Mensagens.`);
     }
   });
+  bindBREvents();
+  bindChecklistEvents();
 }
 
 async function boot() {
   setupSessionUi();
+  maybeShowWelcome();
   setupPermissions();
   bindEvents();
   
   renderGroupList();
   renderGroupChat();
+  renderCheckList();
 
   renderFeed();
+  renderBirthdays();
   renderCalendar();
   renderContentCards("#playlists", playlists);
   renderContentCards("#planos", planos);
   renderShop();
   renderMyPrayers();
+  renderBibleRats();
   renderCultStatus();
   renderChatContacts();
   renderYoungChat();
   renderLeaderInbox();
   updateUnreadBadge();
+  updatePrayerBadge();
   renderMyScales();
   if (typeof renderAgendaFilterOptions === 'function') renderAgendaFilterOptions();
   if (typeof renderAdminLists === 'function') renderAdminLists();
@@ -2632,6 +3242,7 @@ async function boot() {
         if (active.id === 'conversa') renderYoungChat();
         if (active.id === 'mensagens') renderLeaderInbox();
         updateUnreadBadge();
+        updatePrayerBadge();
         if (active.id === 'grupos') renderGroupChat();
         if (active.id === 'home') { renderFeed(); renderCultStatus(); }
         if (active.id === 'agenda') renderCalendar();

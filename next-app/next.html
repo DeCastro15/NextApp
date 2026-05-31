@@ -13,6 +13,44 @@
     <meta name="theme-color" content="#2f73f8" />
   </head>
   <body>
+    <!-- Modal de boas-vindas (novo usuário) -->
+    <div id="welcomeModal" style="display:none; position:fixed; inset:0; z-index:9998;
+        background:rgba(8,12,24,0.75); backdrop-filter:blur(4px);
+        place-items:center; padding:20px; animation:overlayIn 240ms ease forwards;">
+      <div style="background:#fff; border-radius:20px; padding:28px; width:min(480px,100%);
+                  box-shadow:0 40px 100px rgba(0,0,0,0.3);
+                  animation:modalUp 380ms cubic-bezier(0.16,1,0.3,1) forwards;">
+        <p style="font-size:2rem; margin:0 0 8px;">👋🔥</p>
+        <h2 id="welcomeName" style="font-family:'Syne',sans-serif; font-size:1.6rem;
+            font-weight:900; letter-spacing:-0.02em; margin:0 0 6px; color:#0d1117;">
+          Bem-vindo ao Next!
+        </h2>
+        <p id="welcomeVerse" style="color:#64748b; font-size:0.92rem; line-height:1.6;
+            margin:0 0 20px; font-style:italic; border-left:3px solid #2f73f8;
+            padding-left:12px;"></p>
+        <div style="display:grid; gap:8px; margin-bottom:20px;">
+          <div style="display:flex; align-items:center; gap:10px; padding:11px 14px;
+              border:1.5px solid #e2e8f0; border-radius:10px; font-size:0.88rem; font-weight:600;">
+            📅 <span>Explore a <strong>Agenda</strong> — veja os próximos eventos</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:11px 14px;
+              border:1.5px solid #e2e8f0; border-radius:10px; font-size:0.88rem; font-weight:600;">
+            💬 <span>Converse com a <strong>Liderança</strong> diretamente</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px; padding:11px 14px;
+              border:1.5px solid #e2e8f0; border-radius:10px; font-size:0.88rem; font-weight:600;">
+            🙏 <span>Envie um <strong>Pedido de Oração</strong> para a equipe</span>
+          </div>
+        </div>
+        <button onclick="document.getElementById('welcomeModal').style.display='none'"
+                style="width:100%; min-height:50px; border:0; border-radius:10px;
+                      background:#2f73f8; color:#fff; font-family:inherit; font-weight:800;
+                      font-size:0.95rem; cursor:pointer;
+                      box-shadow:0 6px 18px rgba(47,115,248,0.3);">
+          Vamos lá! 🚀
+        </button>
+      </div>
+    </div>
     <div id="splash" role="status" aria-label="Carregando Next">
       <div class="splash-logo-wrap">
         <div class="splash-sparks">
@@ -56,6 +94,9 @@
           </button>
           <button class="nav-item" type="button" data-target="oracao">
             Oração
+          </button>
+          <button class="nav-item" type="button" data-target="biblerats">
+            📸 BibleRats
           </button>
           <button class="nav-item" type="button" data-target="servir">
             Servir
@@ -162,6 +203,11 @@
               <h2>Avisos dos líderes</h2>
             </div>
             <span class="small-badge">4 novos</span>
+          </div>
+          <div id="birthdayCard"
+            style="display:none; border:1px solid var(--line); border-radius:var(--radius);
+                    background:var(--surface); padding:14px; margin-bottom:12px;
+                    border-left:4px solid #f59e0b; box-shadow:0 2px 12px rgba(13,17,23,0.05);">
           </div>
           <div class="feed-list" id="feedList"></div>
         </section>
@@ -306,6 +352,105 @@
           </div>
         </section>
 
+        <!-- ══ BIBLERATS ══ -->
+        <section class="view" id="biblerats" data-title="BibleRats">
+
+          <!-- Header com botão de postar -->
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Comunidade Next</p>
+              <h2>BibleRats 🔥</h2>
+            </div>
+            <button class="primary-button compact" type="button" id="brOpenPostBtn">
+              + Postar hoje
+            </button>
+          </div>
+
+          <!-- Stories (avatares no topo) -->
+          <div id="brStoriesRow" style="
+            display:flex; gap:12px; overflow-x:auto; padding-bottom:8px;
+            margin-bottom:20px; scrollbar-width:none;">
+          </div>
+
+          <!-- Feed de fotos -->
+          <div id="brFeed" style="display:grid; gap:16px;"></div>
+
+          <!-- Modal: nova postagem -->
+          <div id="brPostModal" style="
+            display:none; position:fixed; inset:0; z-index:9990;
+            background:rgba(8,12,24,0.80); backdrop-filter:blur(6px);
+            place-items:center; padding:20px;">
+            <div style="
+              background:var(--surface); border-radius:20px; padding:24px;
+              width:min(460px,100%); display:grid; gap:14px;
+              box-shadow:0 40px 100px rgba(0,0,0,0.35);
+              animation:modalUp 340ms cubic-bezier(0.16,1,0.3,1) forwards;">
+
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="margin:0; font-family:'Syne',sans-serif; font-size:1.2rem; font-weight:900;">
+                  Post de hoje 🔥
+                </h3>
+                <button id="brCloseModal" type="button" style="
+                  background:none; border:none; font-size:1.4rem; cursor:pointer;
+                  color:var(--muted); line-height:1;">×</button>
+              </div>
+
+              <!-- Upload de foto -->
+              <label style="
+                display:flex; flex-direction:column; align-items:center; justify-content:center;
+                gap:8px; min-height:160px; border:2px dashed var(--line); border-radius:12px;
+                cursor:pointer; background:var(--soft); transition:border-color 150ms;"
+                id="brPhotoLabel">
+                <span style="font-size:2rem;">📷</span>
+                <span style="font-size:0.84rem; color:var(--muted); font-weight:600;">
+                  Toque para adicionar uma foto
+                </span>
+                <input type="file" id="brPhotoInput" accept="image/*" capture="environment"
+                      style="display:none;" />
+                <img id="brPhotoPreview" src="" alt="" style="
+                  display:none; max-height:200px; border-radius:8px;
+                  object-fit:cover; width:100%;" />
+              </label>
+
+              <!-- Legenda -->
+              <label style="display:grid; gap:6px; font-weight:700; font-size:0.88rem; color:#374151;">
+                Legenda
+                <textarea id="brCaption" placeholder="O que Deus fez por você hoje? ✨"
+                          rows="3" style="
+                  border:1.5px solid var(--line); border-radius:10px; padding:10px 12px;
+                  font:inherit; font-size:0.90rem; resize:none; background:var(--surface);
+                  color:var(--ink); outline:none; transition:border-color 150ms;">
+                </textarea>
+              </label>
+
+              <!-- Versículo do dia (opcional) -->
+              <label style="display:grid; gap:6px; font-weight:700; font-size:0.88rem; color:#374151;">
+                Versículo (opcional)
+                <input type="text" id="brVerse" placeholder="Ex.: João 3:16"
+                      style="border:1.5px solid var(--line); border-radius:10px;
+                              padding:10px 12px; background:var(--surface); color:var(--ink);" />
+              </label>
+
+              <p id="brPostMsg" style="margin:0; font-size:0.84rem; font-weight:700;
+                color:var(--blue); min-height:18px;"></p>
+
+              <button id="brSubmitPost" type="button" class="primary-button">
+                Publicar 🙌
+              </button>
+            </div>
+          </div>
+
+          <!-- Lightbox -->
+          <div id="brLightbox" style="
+            display:none; position:fixed; inset:0; z-index:9995;
+            background:rgba(0,0,0,0.92); place-items:center; padding:16px;"
+            onclick="this.style.display='none'">
+            <img id="brLightboxImg" src="" alt="" style="
+              max-width:100%; max-height:90vh; border-radius:12px; object-fit:contain;" />
+          </div>
+
+        </section>
+
         <section class="view" id="servir" data-title="Quero Servir">
           <div class="form-layout">
             <div class="form-intro">
@@ -411,6 +556,37 @@
                 <button class="primary-button compact" type="submit">Enviar</button>
               </form>
             </div>
+          </div>
+          <div id="checklistSection" style="margin-top:28px;">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Equipe</p>
+                <h2>Checklist do culto</h2>
+              </div>
+            </div>
+
+            <!-- Criar tarefa (só líderes veem) -->
+            <div id="checklistAdminForm" style="display:none; margin-bottom:14px;">
+              <div style="display:grid; grid-template-columns:1fr auto; gap:8px; align-items:end;">
+                <label style="display:grid; gap:6px; font-weight:700; font-size:0.86rem; color:#374151;">
+                  Nova tarefa
+                  <input type="text" id="checklistTaskInput"
+                        placeholder="Ex.: Checar microfones..."
+                        style="border:1.5px solid var(--line); border-radius:8px;
+                                padding:10px 12px; background:var(--surface); color:var(--ink);" />
+                </label>
+                <button class="primary-button compact" type="button" id="checklistAddBtn"
+                        style="align-self:end; min-height:44px; padding:0 16px;">
+                  Adicionar
+                </button>
+              </div>
+            </div>
+
+            <!-- Lista de tarefas -->
+            <div id="checklistItems" style="display:grid; gap:8px;"></div>
+            <p id="checklistEmpty" style="color:var(--muted); font-size:0.88rem; margin:8px 0;">
+              Nenhuma tarefa criada para este culto ainda.
+            </p>
           </div>
         </section>
 
