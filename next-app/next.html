@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="next.css" />
     <link rel="stylesheet" href="splash.css" />
     <link rel="manifest" href="manifest.json" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <meta name="theme-color" content="#2f73f8" />
   </head>
   <body>
@@ -66,6 +67,11 @@
       <p class="splash-tagline">🔥 A gen that burns for Jesus</p>
       <div class="splash-bar"></div>
     </div>
+    <div id="toastContainer" aria-live="polite" aria-atomic="false"></div>
+    <div id="offlineBanner">
+      <span>⚡</span>
+      <span>Você está offline — algumas funções podem não funcionar</span>
+    </div>
     <div class="app-shell">
       <aside class="sidebar" id="sidebar" aria-label="Menu do jovem">
         <div class="sidebar-head">
@@ -121,6 +127,9 @@
           </button>
           <button class="nav-item" type="button" data-target="configuracoes">
             Configurações
+          </button>
+          <button class="nav-item" type="button" data-target="perfil">
+            👤 Meu Perfil
           </button>
           <button class="nav-item" type="button" id="logoutBtn" style="color: #dc2626; margin-top: 12px;">
             Sair da conta
@@ -203,6 +212,13 @@
               <h2>Avisos dos líderes</h2>
             </div>
             <span class="small-badge">4 novos</span>
+          </div>
+          <!-- Versículo do dia -->
+          <div id="dailyVerseCard" style="
+            border:1px solid var(--line); border-radius:var(--radius);
+            background:var(--surface); padding:14px; margin-bottom:12px;
+            border-left:4px solid var(--blue);
+            box-shadow:0 2px 12px rgba(13,17,23,0.05);">
           </div>
           <div id="birthdayCard"
             style="display:none; border:1px solid var(--line); border-radius:var(--radius);
@@ -667,6 +683,13 @@
 
           <div id="escalaGeralContainer" style="margin-bottom: 32px;"></div>
 
+          <div id="exportScalaBtn" style="display:none; margin-bottom:24px;">
+            <button type="button" id="downloadScalaBtn" class="ghost-button"
+                    style="gap:8px; display:flex; align-items:center;">
+              📥 Salvar escala como imagem
+            </button>
+          </div>
+
           <div class="section-head">
             <div>
               <p class="eyebrow">Treinamento</p>
@@ -899,13 +922,27 @@
         </section>
 
         <section class="view" id="perfil" data-title="Perfil">
-          <div class="profile-card">
+          <div class="profile-card" id="perfilCard">
             <div class="avatar-large">JV</div>
             <div>
               <p class="eyebrow">Membro Next</p>
-              <h2>João V.</h2>
-              <p>13 a 17 anos | AD Fonte de Vida</p>
+              <h2 id="perfilName">João V.</h2>
+              <p id="perfilMeta">AD Fonte de Vida</p>
             </div>
+          </div>
+
+          <!-- Jornada da Vida -->
+          <div class="journey-section">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px;">
+              <div>
+                <p class="eyebrow">Conquistas</p>
+                <h2 style="font-family:var(--font-display); font-size:1.3rem; font-weight:900; letter-spacing:-0.02em; margin:0;">
+                  Jornada da Vida
+                </h2>
+              </div>
+              <span id="journeyProgress" class="small-badge">0 / 4</span>
+            </div>
+            <div class="journey-track" id="journeyTrack"></div>
           </div>
         </section>
       </main>

@@ -97,7 +97,7 @@ const NextAuth = (() => {
 
   function logout() {
     localStorage.removeItem(SESSION_KEY);
-    window.location.href = 'index.html';
+    window.location.href = 'index.html?logout=1';
   }
 
   // TODO (migração Supabase): next_celula_popup_snoozed_until está em localStorage.
@@ -246,7 +246,7 @@ const NextDB = (() => {
 })();
 
 // ---------------------------------------------------------------------------
-// Seed — popula o localStorage na primeira vez
+// Seed — popula o localStorage na primeira vez (ou repopula se estiver vazio)
 // ---------------------------------------------------------------------------
 (function seedData() {
   // Usuários
@@ -254,19 +254,21 @@ const NextDB = (() => {
     NextAuth.MOCK_USERS.forEach((u) => NextDB.save('next_users', u));
   }
 
-  // Posts/avisos
-  if (!NextDB.getAll('next_posts').length) {
+  // Posts/avisos — repopula se não houver nenhum
+  const existingPosts = NextDB.getAll('next_posts');
+  if (!existingPosts.length) {
     const posts = [
       { id: 'p1', tag: 'Hoje',   title: 'Culto Next às 19h30',    text: 'Chegue um pouco antes para sentar com a galera.', time: '2h', createdAt: Date.now() - 7200000   },
       { id: 'p2', tag: 'Aviso',  title: 'Traga sua Bíblia',        text: 'A palavra de hoje vai ter leitura em grupo.',     time: '5h', createdAt: Date.now() - 18000000  },
       { id: 'p3', tag: 'Evento', title: 'Noite do Amigo',          text: 'Convide alguém para o próximo sábado.',           time: '1d', createdAt: Date.now() - 86400000  },
       { id: 'p4', tag: 'Servir', title: 'Inscrições para apoio',   text: 'Fale com um líder se quiser ajudar na recepção.', time: '2d', createdAt: Date.now() - 172800000 },
     ];
-    posts.forEach((p) => NextDB.save('next_posts', p));
+    localStorage.setItem('next_posts', JSON.stringify(posts));
   }
 
-  // Eventos / Agenda
-  if (!NextDB.getAll('next_events').length) {
+  // Eventos / Agenda — repopula se não houver eventos base (ignora eventos de célula)
+  const existingEvents = NextDB.getAll('next_events').filter(e => !e.isCellEvent);
+  if (!existingEvents.length) {
     const now = new Date();
     const yr = now.getFullYear();
     const mo = now.getMonth();
@@ -296,17 +298,20 @@ const NextDB = (() => {
       qua && { id: 'e5', date: fmtDay(qua), month: fmtMonth(qua), weekDay: fmtWeekday(qua), time: '19h00', title: 'Reunião de Líderes',            text: 'Planejamento do mês de junho.',            detail: 'Alinhamento interno da equipe de liderança.',                            location: 'AD Fonte de Vida', audience: 'lideres'        },
     ].filter(Boolean);
 
-    events.forEach((e) => NextDB.save('next_events', e));
+    // Preserva eventos de célula que já existiam, adiciona os base
+    const cellEvents = NextDB.getAll('next_events').filter(e => e.isCellEvent);
+    localStorage.setItem('next_events', JSON.stringify([...events, ...cellEvents]));
   }
 
-  // Produtos
-  if (!NextDB.getAll('next_products').length) {
+  // Produtos — repopula se não houver nenhum disponível
+  const existingProducts = NextDB.getAll('next_products').filter(p => p.available !== false);
+  if (!existingProducts.length) {
     const products = [
       { id: 'prod1', title: 'Camiseta Next',  text: 'Azul oficial com logo frontal.',      price: 'R$ 49,90',  available: true },
       { id: 'prod2', title: 'Moletom Next',   text: 'Pré-venda para os jovens.',           price: 'R$ 119,90', available: true },
       { id: 'prod3', title: 'Pulseira Next',  text: 'Modelo simples para usar no culto.',  price: 'R$ 9,90',   available: true },
     ];
-    products.forEach((p) => NextDB.save('next_products', p));
+    localStorage.setItem('next_products', JSON.stringify(products));
   }
 
   // Status do culto
@@ -314,8 +319,9 @@ const NextDB = (() => {
     NextDB.setValue('next_cult_status', 'inativo');
   }
 
-  // Pedidos de oração
-  if (!NextDB.getAll('next_prayers').length) {
-    NextDB.setValue('next_prayers', []);
-  }
+  // Pedidos de oração — garante que a chave existe
+  try {
+    const prayers = localStorage.getItem('next_prayers');
+    if (prayers === null) localStorage.setItem('next_prayers', '[]');
+  } catch { /* ignore */ }
 })();

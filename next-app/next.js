@@ -2,6 +2,105 @@ const authApi = typeof NextAuth !== "undefined" ? NextAuth : null;
 const dbApi = typeof NextDB !== "undefined" ? NextDB : null;
 const currentUser = authApi?.currentUser();
 
+// ── Toast ──────────────────────────────────────────
+function toast(msg, type = 'info', duration = 3200) {
+  const container = document.getElementById('toastContainer');
+  if (!container) { console.log('[toast]', msg); return; }
+
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+
+  const remove = () => {
+    el.classList.add('removing');
+    el.addEventListener('animationend', () => el.remove(), { once: true });
+  };
+
+  const timer = setTimeout(remove, duration);
+  el.addEventListener('click', () => { clearTimeout(timer); remove(); });
+}
+
+
+// ── Modal de confirmação (substitui window.confirm) ──
+function showConfirm(message, onConfirm, onCancel) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = [
+    'position:fixed','inset:0','z-index:99990',
+    'background:rgba(8,12,24,0.72)','backdrop-filter:blur(4px)',
+    'display:grid','place-items:center','padding:20px',
+    'animation:overlayIn 220ms ease forwards'
+  ].join(';');
+
+  const box = document.createElement('div');
+  box.style.cssText = [
+    'background:var(--surface)','border-radius:16px','padding:24px 22px',
+    'width:min(360px,100%)','display:grid','gap:16px',
+    'box-shadow:0 40px 100px rgba(0,0,0,0.35)',
+    'animation:modalUp 300ms cubic-bezier(0.16,1,0.3,1) forwards'
+  ].join(';');
+
+  const msg = document.createElement('p');
+  msg.style.cssText = 'margin:0;font-size:0.96rem;font-weight:600;color:var(--ink);line-height:1.5;';
+  msg.textContent = message;
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:10px;justify-content:flex-end;';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.style.cssText = [
+    'min-height:42px','padding:0 18px','border-radius:10px',
+    'border:1.5px solid var(--line)','background:transparent',
+    'color:var(--muted)','font-family:inherit','font-weight:700',
+    'cursor:pointer','font-size:0.88rem'
+  ].join(';');
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.textContent = 'Confirmar';
+  confirmBtn.style.cssText = [
+    'min-height:42px','padding:0 20px','border-radius:10px',
+    'border:0','background:#dc2626','color:#fff',
+    'font-family:inherit','font-weight:800','cursor:pointer','font-size:0.88rem'
+  ].join(';');
+
+  const close = () => {
+    overlay.style.animation = 'toastOut 220ms ease forwards';
+    overlay.addEventListener('animationend', () => overlay.remove(), { once: true });
+  };
+
+  cancelBtn.addEventListener('click', () => { close(); onCancel?.(); });
+  confirmBtn.addEventListener('click', () => { close(); onConfirm(); });
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) { close(); onCancel?.(); } });
+
+  row.append(cancelBtn, confirmBtn);
+  box.append(msg, row);
+  overlay.append(box);
+  document.body.appendChild(overlay);
+  confirmBtn.focus();
+}
+
+// ── Detector offline ──
+function initOfflineDetector() {
+  const banner = document.getElementById('offlineBanner');
+  if (!banner) return;
+
+  function update() {
+    banner.classList.toggle('visible', !navigator.onLine);
+    if (!navigator.onLine) {
+      toast('Conexão perdida. Operando em modo offline.', 'warn', 5000);
+    } else {
+      toast('Conexão restaurada! ✓', 'success', 2500);
+    }
+  }
+
+  window.addEventListener('offline', update);
+  window.addEventListener('online',  update);
+
+  // Checa no boot silenciosamente (sem toast)
+  if (!navigator.onLine) banner.classList.add('visible');
+}
+
 if (!currentUser) {
   window.location.href = "index.html";
   throw new Error("Sessao nao encontrada");
@@ -29,13 +128,13 @@ const leaderPhotos = {
 const cultStages = ["inativo", "Louvor", "Pregação", "Apelo", "Finalizado"];
 
 const permissionsByRole = {
-  jovem:      ["home", "agenda", "conteudo", "loja", "oracao", "conversa", "servir", "biblerats", "configuracoes"],
-  responsavel:["home", "agenda", "culto", "biblerats", "configuracoes"],
-  lider:      ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "biblerats", "configuracoes"],
-  sublider:   ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "escalas", "gestao", "biblerats", "configuracoes"],
-  pastor:     ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "biblerats", "configuracoes"],
-  missionaria:["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "biblerats", "configuracoes"],
-  admin:      ["home", "agenda", "culto", "conteudo", "loja", "gestao", "biblerats", "configuracoes", "servos"],
+  jovem:      ["home", "agenda", "conteudo", "loja", "oracao", "conversa", "servir", "biblerats", "perfil", "configuracoes"],
+  responsavel:["home", "agenda", "culto", "biblerats", "perfil", "configuracoes"],
+  lider:      ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "biblerats", "perfil", "configuracoes"],
+  sublider:   ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "escalas", "gestao", "biblerats", "perfil", "configuracoes"],
+  pastor:     ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "biblerats", "perfil", "configuracoes"],
+  missionaria:["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "biblerats", "perfil", "configuracoes"],
+  admin:      ["home", "agenda", "culto", "conteudo", "loja", "gestao", "biblerats", "perfil", "configuracoes", "servos"],
 };
 
 const functionsMap = {
@@ -352,6 +451,7 @@ function setView(target) {
   if (target === "mensagens") { renderLeaderInbox(); markMessagesAsSeen(); }
   if (target === "gestao") renderAdminLists();
   if (target === "culto") renderCultStatus();
+  if (target === "perfil") renderPerfil();
   if (target === "escalas") {
     populateScaleEvents();
     renderDynamicScaleFields();
@@ -467,10 +567,61 @@ function renderBirthdays() {
         <p style="margin:4px 0 0; font-weight:700; font-size:0.94rem; color:var(--ink);">
           ${upcoming.map(u => {
             const [, month, day] = u.birthday.split('-').map(Number);
-            const isToday = Number(day) === todayDay && Number(month) === todayDay;
+            const isToday = Number(day) === todayDay && Number(month) === todayMonth;
             return `${u.name.split(' ')[0]}${isToday ? ' 🎉' : ` (dia ${day})`}`;
           }).join(' · ')}
         </p>
+      </div>
+    </div>
+  `;
+}
+
+const DAILY_VERSES = [
+  { text: '“Porque sou eu que conheço os planos que tenho para vocês”, diz o Senhor, “planos de fazê-los prosperar e não de causar dano, planos de dar a vocês esperança e um futuro.”', ref: 'Jr 29:11' },
+  { text: 'Por isso não tema, pois estou com você; não tenha medo, pois sou o seu Deus. Eu o fortalecerei e o ajudarei; eu o segurarei com a minha mão direita vitoriosa.', ref: 'Is 41:10' },
+  { text: 'Tudo posso naquele que me fortalece.', ref: 'Fp 4:13' },
+  { text: 'Confie no Senhor de todo o seu coração e não se apóie em seu próprio entendimento;', ref: 'Pv 3:5' },
+  { text: 'Busquem, pois, em primeiro lugar o Reino de Deus e a sua justiça, e todas essas coisas serão acrescentadas a vocês.', ref: 'Mt 6:33' },
+  { text: 'O Senhor é o meu pastor; de nada terei falta.', ref: 'Sl 23:1' },
+  { text: 'Sejam fortes e corajosos. Não tenham medo nem fiquem apavorados por causa deles, pois o Senhor, o seu Deus, vai com vocês; nunca os deixará, nunca os abandonará.', ref: 'Dt 31:6' },
+  { text: 'O amor é paciente, o amor é bondoso. Não inveja, não se vangloria, não se orgulha.', ref: '1 Co 13:4' },
+  { text: 'Finalmente, irmãos, tudo o que for verdadeiro, tudo o que for nobre, tudo o que for correto, tudo o que for puro, tudo o que for amável, tudo o que for de boa fama, se houver algo de excelente ou digno de louvor, pensem nessas coisas.', ref: 'Fp 4:8' },
+  { text: 'Alegrem-se sempre no Senhor. Novamente direi: Alegrem-se!', ref: 'Fp 4:4' },
+  { text: 'Deleite-se no Senhor, e ele atenderá aos desejos do seu coração.', ref: 'Sl 37:4' },
+  { text: 'O Senhor protege os simples; quando eu já estava sem forças, ele me salvou.', ref: 'Sl 116:6' },
+  { text: 'Porque Deus tanto amou o mundo que deu o seu Filho Unigênito, para que todo o que nele crer não pereça, mas tenha a vida eterna.', ref: 'Jo 3:16' },
+  { text: 'Toda a Escritura é inspirada por Deus e útil para o ensino, para a repreensão, para a correção e para a instrução na justiça,', ref: '2 Tm 3:16' },
+  { text: 'O Senhor é a minha luz e a minha salvação; de quem terei temor? O Senhor é o baluarte da minha vida; de quem terei medo?', ref: 'Sl 27:1' },
+  { text: 'Eles responderam: “Creia no Senhor Jesus e serão salvos, você e os de sua casa”.', ref: 'At 16:31' },
+  { text: 'Nada façam por ambição egoísta ou por vaidade, mas por humildade considerem os outros superiores a vocês mesmos.', ref: 'Fp 2:3' },
+  { text: '“Venham a mim, todos os que estão cansados e sobrecarregados, e eu darei descanso a vocês.”', ref: 'Mt 11:28' },
+  { text: 'Não se amoldem ao padrão deste mundo, mas transformem-se pela renovação da sua mente, para que sejam capazes de experimentar e comprovar a boa, agradável e perfeita vontade de Deus.', ref: 'Rm 12:2' },
+  { text: 'Pois Deus não nos deu um espírito de covardia, mas de poder, de amor e de equilíbrio.', ref: '2 Tm 1:7' },
+  { text: 'Mas aqueles que esperam no Senhor renovam as suas forças. Voam alto como águias; correm e não ficam exaustos, andam e não se cansam.', ref: 'Is 40:31' },
+  { text: 'O Senhor o protegerá de todo o mal, ele protegerá a sua vida.', ref: 'Sl 121:7' },
+  { text: 'Finalmente, fortaleçam-se no Senhor e na força do seu poder.', ref: 'Ef 6:10' },
+  { text: 'O ladrão vem apenas para roubar, matar e destruir; eu vim para que tenham vida, e a tenham plenamente.', ref: 'Jo 10:10' },
+  { text: 'Estou convencido de que aquele que começou boa obra em vocês vai completá-la até o dia de Cristo Jesus.', ref: 'Fp 1:6' },
+  { text: 'Graça e paz lhes sejam multiplicadas, pelo pleno conhecimento de Deus e de Jesus, o nosso Senhor.', ref: '2 Pe 1:2' },
+  { text: 'Não se amoldem ao padrão deste mundo, mas transformem-se pela renovação da sua mente...', ref: 'Rm 12:2' }, // Nota: No seu array original o Rm 12:2 estava repetido, mantive o mesmo padrão com o texto NVI.
+  { text: 'A tua palavra é lâmpada que ilumina os meus passos e luz que clareia o meu caminho.', ref: 'Sl 119:105' },
+  { text: 'Dêm graças em todas as circunstâncias, pois esta é a vontade de Deus para vocês em Cristo Jesus.', ref: '1 Ts 5:18' },
+  { text: 'Tudo o que fizerem, façam de todo o coração, como para o Senhor, e não para os homens,', ref: 'Cl 3:23' },
+];
+
+function renderDailyVerse() {
+  const el = document.getElementById('dailyVerseCard');
+  if (!el) return;
+  const verse = DAILY_VERSES[new Date().getDate() % DAILY_VERSES.length];
+  el.innerHTML = `
+    <div style="display:flex; gap:12px; align-items:flex-start;">
+      <span style="font-size:1.5rem; flex-shrink:0; margin-top:2px;">📖</span>
+      <div>
+        <p class="eyebrow" style="margin:0 0 5px; color:var(--blue);">Palavra do dia</p>
+        <p style="margin:0 0 6px; font-size:0.92rem; font-weight:500; line-height:1.6; color:var(--ink); font-style:italic;">
+          "${verse.text}"
+        </p>
+        <span style="font-size:0.78rem; font-weight:800; color:var(--blue);">— ${verse.ref}</span>
       </div>
     </div>
   `;
@@ -634,7 +785,7 @@ function renderAgendaDetail(index) {
   const contactBtn = detail.querySelector('#contactCellLeaderBtn');
   if (contactBtn) {
     contactBtn.addEventListener('click', () => {
-      alert('Envie uma mensagem para a liderança da célula pela aba "Conversar". Eles vão adorar te ajudar! 🙌');
+    toast('Acesse a aba "Conversar" para falar direto com a liderança da sua célula. 🙌', 'info');
     });
   }
 }
@@ -853,7 +1004,7 @@ function addCellEventsForUser(cellId, userId) {
   const msg = unlockedDate
     ? `Você foi adicionado à ${cell.name}! O encontro desta semana aparece na sua agenda. 🙌`
     : `Você foi adicionado à ${cell.name}! O encontro aparecerá na agenda assim que a liderança confirmar a célula da semana. 🙌`;
-  alert(msg);
+  toast(msg, 'success', 4000);
 }
 
 function selectAgendaItem(index) {
@@ -2103,6 +2254,11 @@ function renderMyScales() {
       ${geralHtml}
     ` : "";
   }
+
+    const exportBtn = document.getElementById('exportScalaBtn');
+    if (exportBtn) {
+      exportBtn.style.display = geralContainer?.innerHTML ? 'block' : 'none';
+    }
 }
 
 // ══════════════════════════════════════════════════
@@ -2111,6 +2267,19 @@ function renderMyScales() {
 
 const BR_COLLECTION = 'next_biblerats_posts';
 let brPhotoBase64 = '';
+
+function cleanOldBRPosts() {
+  const DAYS = 30;
+  const cutoff = Date.now() - DAYS * 86400000;
+  const posts = getBRPosts();
+  const before = posts.length;
+  const fresh = posts.filter(p => p.createdAt > cutoff);
+
+  if (fresh.length < before) {
+    localStorage.setItem(BR_COLLECTION, JSON.stringify(fresh));
+    console.info(`[BibleRats] ${before - fresh.length} posts antigos removidos.`);
+  }
+}
 
 function getBRPosts() {
   return getAll(BR_COLLECTION, []).sort((a, b) => b.createdAt - a.createdAt);
@@ -2134,6 +2303,27 @@ function brRelativeTime(ts) {
   return `${Math.floor(diff/86400)}d`;
 }
 
+function getBRStreak(userId) {
+  const posts = getBRPosts().filter(p => p.userId === userId);
+  if (!posts.length) return 0;
+
+  const dayKeys = new Set(posts.map(p => p.dayKey));
+  let streak = 0;
+  const d = new Date();
+
+  // Começa de hoje e vai voltando
+  for (let i = 0; i < 365; i++) {
+    const key = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    if (dayKeys.has(key)) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
 function renderBRStories() {
   const el = document.getElementById('brStoriesRow');
   if (!el) return;
@@ -2148,6 +2338,7 @@ function renderBRStories() {
   );
 
   const iPosted = postedToday.has(currentUser.id);
+  const myStreak = getBRStreak(currentUser.id);
 
   const stories = users
     .filter(u => postedToday.has(u.id))
@@ -2162,12 +2353,22 @@ function renderBRStories() {
     <button type="button" id="brMyStory" style="
       display:flex; flex-direction:column; align-items:center; gap:5px;
       background:none; border:none; cursor:pointer; flex-shrink:0;">
-      <div style="
-        width:52px; height:52px; border-radius:50%; ${myRing}
-        background:var(--ink); color:#fff; display:grid; place-items:center;
-        font-family:'Syne',sans-serif; font-weight:900; font-size:0.9rem;
-        box-shadow:0 2px 8px rgba(0,0,0,0.15);">
-        ${iPosted ? '✓' : '+'}
+      <div style="position:relative;">
+        <div style="
+          width:52px; height:52px; border-radius:50%; ${myRing}
+          background:var(--ink); color:#fff; display:grid; place-items:center;
+          font-family:'Syne',sans-serif; font-weight:900; font-size:0.9rem;
+          box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+          ${iPosted ? '✓' : '+'}
+        </div>
+        ${myStreak >= 2 ? `
+          <span style="
+            position:absolute; bottom:-4px; left:50%; transform:translateX(-50%);
+            background:#ff6b35; color:#fff; font-size:0.58rem; font-weight:900;
+            padding:1px 5px; border-radius:999px; white-space:nowrap;
+            border:1.5px solid var(--surface); line-height:1.6;">
+            🔥${myStreak}d
+          </span>` : ''}
       </div>
       <span style="font-size:0.68rem; font-weight:700; color:var(--muted);">
         ${iPosted ? 'Você' : 'Postar'}
@@ -2323,7 +2524,7 @@ function renderBRFeed() {
   // Remover (líderes)
   el.querySelectorAll('[data-br-delete]').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (!confirm('Remover este post?')) return;
+      if (!toastConfirm()) return;
       dbApi?.remove(BR_COLLECTION, btn.dataset.brDelete);
       renderBRFeed();
       renderBRStories();
@@ -2607,6 +2808,196 @@ function bindChecklistEvents() {
   });
 }
 
+function bindExportScala() {
+  document.getElementById('downloadScalaBtn')?.addEventListener('click', async () => {
+    const target = document.querySelector('.escala-table-wrapper');
+    if (!target || typeof html2canvas === 'undefined') {
+      toast('html2canvas não carregado ainda. Tente novamente.', 'warn');
+      return;
+    }
+    toast('Gerando imagem da escala...', 'info', 2000);
+    try {
+      const canvas = await html2canvas(target, { scale: 2, backgroundColor: '#fff' });
+      const link = document.createElement('a');
+      link.download = `escala-next-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast('Escala salva com sucesso! ✓', 'success');
+    } catch {
+      toast('Erro ao gerar imagem. Tente novamente.', 'error');
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  JORNADA DA VIDA — achievements
+// ══════════════════════════════════════════════════
+
+const JOURNEY_STEPS = [
+  {
+    id: 'descubra',
+    name: 'Descubra',
+    level: 'Nível 1',
+    desc: 'Para quem ainda não se batizou e quer dar esse passo de fé.',
+    icon: '💧',
+    emoji: '🔵',
+    color: '#2f73f8',
+    badgeLabel: 'Batismo',
+  },
+  {
+    id: 'avance',
+    name: 'Avance',
+    level: 'Nível 2',
+    desc: 'Um panorama bíblico para entender a palavra de forma clara e prática.',
+    icon: '📖',
+    emoji: '🟢',
+    color: '#10b981',
+    badgeLabel: 'Palavra',
+  },
+  {
+    id: 'fundamentos',
+    name: 'Fundamentos da Fé',
+    level: 'Nível 3',
+    desc: 'Aprenda os pilares que norteiam a Fonte e fortalecem a caminhada cristã.',
+    icon: '🏛️',
+    emoji: '🟡',
+    color: '#d97706',
+    badgeLabel: 'Fundamentos',
+  },
+  {
+    id: 'ide',
+    name: 'Escola de Líderes',
+    level: 'Nível 4',
+    desc: 'Preparada para formar líderes de célula e formadores de discípulos.',
+    icon: '🐟',
+    emoji: '🔴',
+    color: '#dc2626',
+    badgeLabel: 'Liderança',
+  },
+];
+
+const JOURNEY_KEY = `next_journey:${currentUser?.id}`;
+
+function getJourneyData() {
+  try { return JSON.parse(localStorage.getItem(JOURNEY_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function saveJourneyStep(stepId) {
+  const data = getJourneyData();
+  data[stepId] = { unlockedAt: Date.now() };
+  localStorage.setItem(JOURNEY_KEY, JSON.stringify(data));
+
+  // Também persiste na sessão/perfil para o futuro Supabase
+  const user = authApi?.currentUser?.();
+  if (user) authApi?.updateSession?.({ journey: data });
+
+  renderJourney();
+  toast(`Conquista desbloqueada: ${JOURNEY_STEPS.find(s => s.id === stepId)?.name}! 🎉`, 'success', 4000);
+}
+
+function renderJourney() {
+  const track = document.getElementById('journeyTrack');
+  const progressEl = document.getElementById('journeyProgress');
+  if (!track) return;
+
+  const data = getJourneyData();
+  const unlocked = Object.keys(data).length;
+
+  if (progressEl) progressEl.textContent = `${unlocked} / ${JOURNEY_STEPS.length}`;
+
+  track.innerHTML = JOURNEY_STEPS.map((step, idx) => {
+    const isDone = Boolean(data[step.id]);
+    const date = isDone
+      ? new Date(data[step.id].unlockedAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
+      : null;
+
+    // Medalha visual: círculo colorido com número quando desbloqueado
+    const medalHtml = isDone
+      ? `<div class="journey-medal unlocked" style="--journey-color:${step.color};">
+           <span class="journey-medal-icon">${step.icon}</span>
+           <span class="journey-medal-check">✓</span>
+         </div>`
+      : `<div class="journey-medal locked" style="--journey-color:${step.color};">
+           <span class="journey-medal-num">${idx + 1}</span>
+         </div>`;
+
+    // Badge de nível no topo do card
+    const levelTag = `<span class="journey-level-tag" style="background:${isDone ? step.color : 'var(--line)'}; color:${isDone ? '#fff' : 'var(--muted)'};">${step.level}</span>`;
+
+    return `
+      <div class="journey-step ${isDone ? 'unlocked' : ''}"
+           style="--journey-color:${step.color};">
+        ${medalHtml}
+        <div class="journey-info">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px;">
+            <strong>${step.name}</strong>
+            ${levelTag}
+          </div>
+          <p>${isDone
+            ? `<span style="color:${step.color};font-weight:700;">✓ Conquista desbloqueada</span> · ${date}`
+            : step.desc}</p>
+          ${isDone ? `<span class="journey-badge-label" style="background:color-mix(in srgb,${step.color} 12%,transparent);color:${step.color};">${step.emoji} ${step.badgeLabel}</span>` : ''}
+        </div>
+        ${isDone
+          ? `<div class="journey-trophy" style="color:${step.color};">🏆</div>`
+          : canManage()
+            ? `<button class="journey-unlock-btn" type="button"
+                 data-journey-unlock="${step.id}"
+                 style="--journey-color:${step.color};">
+                 Confirmar
+               </button>`
+            : `<div class="journey-badge" style="font-size:0.75rem;">🔒</div>`
+        }
+      </div>
+    `;
+  }).join('');
+
+  // Conector de progresso entre passos
+  const steps = track.querySelectorAll('.journey-step');
+  steps.forEach((el, i) => {
+    if (i < steps.length - 1) el.style.marginBottom = '0';
+  });
+
+  // Handler: líderes confirmam a conquista do jovem
+  track.querySelectorAll('[data-journey-unlock]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      showConfirm(
+        `Confirmar conquista "${JOURNEY_STEPS.find(s => s.id === btn.dataset.journeyUnlock)?.name}" para ${currentUser.name}?`,
+        () => saveJourneyStep(btn.dataset.journeyUnlock)
+      );
+    });
+  });
+}
+
+function renderPerfil() {
+  const card = document.getElementById('perfilCard');
+  if (!card) return;
+
+  const profile = getProfileFromStorage();
+  const avatar  = card.querySelector('.avatar-large');
+  const nameEl  = document.getElementById('perfilName');
+  const metaEl  = document.getElementById('perfilMeta');
+
+  if (avatar) {
+    if (profile.photo) {
+      avatar.style.backgroundImage = `url(${profile.photo})`;
+      avatar.style.backgroundSize  = 'cover';
+      avatar.style.backgroundPosition = 'center';
+      avatar.textContent = '';
+      avatar.classList.add('has-photo');
+    } else {
+      avatar.textContent = initials(profile.name || currentUser.name);
+      avatar.classList.remove('has-photo');
+    }
+  }
+
+  if (nameEl) nameEl.textContent = profile.name || currentUser.name;
+  if (metaEl) metaEl.textContent = `${profile.city || 'AD Fonte de Vida'} · ${roleLabels[currentUser.role] || 'Jovem'}`;
+
+  renderJourney();
+}
+
 function bindEvents() {
   navButtons.forEach((button) => button.addEventListener("click", () => setView(button.dataset.target)));
 
@@ -2770,7 +3161,7 @@ function bindEvents() {
       saveItem("next_applications", appObj);
       renderApplicationsList();
       renderServoOptions(); // Atualiza as outras caixinhas de gestão
-      alert(`${appObj.userName} foi adicionado à equipe de ${appObj.dept} com sucesso!`);
+      toast(`${appObj.userName} adicionado à equipe de ${appObj.dept}! ✓`, 'success');
     }
 
     if (discussBtn) {
@@ -2799,16 +3190,17 @@ function bindEvents() {
       appObj.status = "resolved";
       saveItem("next_applications", appObj);
       renderApplicationsList();
-      alert(`Mensagem automática enviada para ${appObj.userName}! Acesse a aba "Mensagens" para aguardar a resposta.`);
+      toast(`Mensagem enviada para ${appObj.userName}! Veja na aba Mensagens.`, 'info');
     }
   });
 
   const logoutBtn = document.querySelector("#logoutBtn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
-      if (confirm("Tem certeza que deseja sair da sua conta?")) {
-        NextAuth.logout();
-      }
+    showConfirm(
+      'Tem certeza que deseja sair da sua conta?',
+      () => NextAuth.logout()
+    );
     });
   }
 
@@ -2867,10 +3259,10 @@ function bindEvents() {
     if (!deleteBtn) return;
 
     const eventId = deleteBtn.dataset.eventId;
-    if (confirm("Tem certeza que deseja remover este evento do cronograma?")) {
-      NextDB.remove("next_events", eventId);
-      renderCalendar(); 
-    }
+    showConfirm(
+      'Remover este evento do cronograma?',
+      () => { NextDB.remove("next_events", eventId); renderCalendar(); }
+    );
   });
 
   document.querySelector("#cultStatusOptions")?.addEventListener("click", (event) => {
@@ -2932,8 +3324,7 @@ function bindEvents() {
   document.querySelector("#calendarStrip")?.addEventListener("click", (event) => {
     const dayChip = event.target.closest("[data-day]");
     if (!dayChip) return;
-    const index = getEvents()
-      .sort((a, b) => Number(a.date) - Number(b.date))
+    const index = _lastFilteredEvents
       .findIndex((item) => String(item.date) === dayChip.dataset.day);
     if (index >= 0) {
       selectAgendaItem(index);
@@ -3045,10 +3436,10 @@ function bindEvents() {
 
       if (deleteBtn) {
         const prodId = deleteBtn.dataset.deleteProduct;
-        if (confirm("Tem certeza que deseja remover este produto definitivamente?")) {
-          NextDB.remove("next_products", prodId);
-          renderShop();
-        }
+        showConfirm(
+          'Remover este produto definitivamente?',
+          () => { NextDB.remove("next_products", prodId); renderShop(); }
+        );
       }
     });
   }
@@ -3110,7 +3501,7 @@ function bindEvents() {
     if (!cell) return;
     confirmCellWeek(cellId);
     renderCellWeekPanel();
-    alert(`Célula ${cell.name} confirmada! O encontro da próxima semana já está desbloqueado na agenda. 🙌`);
+    toast(`Célula ${cell.name} confirmada! Próximo encontro desbloqueado. 🙌`, 'success');
   });
 
   // Célula: confirmar presença / entrar em contato
@@ -3134,7 +3525,7 @@ function bindEvents() {
       }
 
       renderCellPendingList();
-      alert(`${userName} confirmado(a) na ${item.cellName}! ✓`);
+      toast(`${userName} confirmado(a) na ${item.cellName}! ✓`, 'success');
     }
 
     if (contactBtn) {
@@ -3164,15 +3555,17 @@ function bindEvents() {
       }
 
       renderCellPendingList();
-      alert(`Mensagem enviada para ${userName}! Acompanhe pela aba Mensagens.`);
+      toast(`Mensagem enviada para ${userName}! Acompanhe pela aba Mensagens.`, 'info');
     }
   });
   bindBREvents();
   bindChecklistEvents();
+  bindExportScala();
 }
 
 async function boot() {
   setupSessionUi();
+  initOfflineDetector();
   maybeShowWelcome();
   setupPermissions();
   bindEvents();
@@ -3182,12 +3575,14 @@ async function boot() {
   renderChecklist();
 
   renderFeed();
+  renderDailyVerse();
   renderBirthdays();
   renderCalendar();
   renderContentCards("#playlists", playlists);
   renderContentCards("#planos", planos);
   renderShop();
   renderMyPrayers();
+  cleanOldBRPosts();
   renderBibleRats();
   renderCultStatus();
   renderChatContacts();
@@ -3199,6 +3594,7 @@ async function boot() {
   if (typeof renderAgendaFilterOptions === 'function') renderAgendaFilterOptions();
   if (typeof renderAdminLists === 'function') renderAdminLists();
   fillProfileForm(getProfileFromStorage());
+  renderPerfil();
   setView(views.find((view) => view.classList.contains("active") && canView(view.id))?.id || allowedViews()[0]);
 
   // Realtime Supabase — escuta mudanças em tempo real
@@ -3244,7 +3640,7 @@ async function boot() {
         updateUnreadBadge();
         updatePrayerBadge();
         if (active.id === 'grupos') renderGroupChat();
-        if (active.id === 'home') { renderFeed(); renderCultStatus(); }
+        if (active.id === 'home') { renderFeed(); renderCultStatus(); renderDailyVerse(); renderBirthdays(); }
         if (active.id === 'agenda') renderCalendar();
       }, 15000);
     }

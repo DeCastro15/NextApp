@@ -670,8 +670,12 @@
       window.NEXT_CELLS = CELLS;
 
       // ── Auth check ───────────────────────────────────────────────────────────
+      // Só redireciona automaticamente se o usuário NÃO clicou em "sair" explicitamente.
+      // O parâmetro ?logout=1 na URL indica que o usuário saiu e não deve ser redirecionado.
+      const _urlParams = new URLSearchParams(window.location.search);
+      const _justLoggedOut = _urlParams.has('logout');
       const currentUser = NextAuth.currentUser();
-      if (currentUser) checkCellPopup(currentUser);
+      if (currentUser && !_justLoggedOut) checkCellPopup(currentUser);
 
       // ── Cell popup ───────────────────────────────────────────────────────────
       function checkCellPopup(user) {

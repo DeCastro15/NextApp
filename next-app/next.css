@@ -1877,6 +1877,236 @@ body.dark-mode .escala-col { border-color: #000; }
 /* nav-item precisa de position:relative para o badge se posicionar certo */
 .nav-item { position: relative; }
 
+/* ── Toast notifications ── */
+#toastContainer {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99998;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+  width: min(420px, calc(100vw - 32px));
+}
+
+.toast {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #1e293b;
+  color: #f0f4ff;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+  pointer-events: auto;
+  animation: toastIn 300ms cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+.toast.success { background: #064e3b; border-left: 4px solid #10b981; }
+.toast.error   { background: #7f1d1d; border-left: 4px solid #ef4444; }
+.toast.info    { background: #1e3a6e; border-left: 4px solid #2f73f8; }
+.toast.warn    { background: #78350f; border-left: 4px solid #f59e0b; }
+
+.toast.removing {
+  animation: toastOut 260ms ease forwards;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0)    scale(1);    }
+  to   { opacity: 0; transform: translateY(10px) scale(0.95); }
+}
+
+/* Ícones por tipo */
+.toast::before {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.toast.success::before { content: '✓'; }
+.toast.error::before   { content: '✕'; }
+.toast.info::before    { content: 'ℹ'; }
+.toast.warn::before    { content: '⚠'; }
+
+/* ── Faixa offline ── */
+#offlineBanner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 99997;
+  height: 36px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #78350f;
+  color: #fef3c7;
+  font-size: 0.80rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  letter-spacing: 0.01em;
+  animation: slideDownBanner 300ms ease forwards;
+}
+
+#offlineBanner.visible { display: flex; }
+
+@keyframes slideDownBanner {
+  from { transform: translateY(-100%); }
+  to   { transform: translateY(0); }
+}
+
+/* ── Jornada da Vida — achievements ── */
+.journey-section {
+  margin-top: 28px;
+}
+
+.journey-track {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.journey-step {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color 180ms, box-shadow 180ms, transform 120ms;
+  cursor: default;
+  position: relative;
+  overflow: hidden;
+}
+
+.journey-step::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 300ms;
+}
+
+.journey-step.unlocked {
+  border-color: var(--journey-color, var(--blue));
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--journey-color, var(--blue)) 20%, transparent);
+}
+
+.journey-step.unlocked::before {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--journey-color) 8%, transparent), transparent 60%);
+  opacity: 1;
+}
+
+.journey-icon {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  border: 2.5px solid var(--line);
+  background: var(--soft);
+  transition: border-color 200ms, background 200ms, box-shadow 200ms;
+  position: relative;
+  z-index: 1;
+}
+
+.journey-step.unlocked .journey-icon {
+  border-color: var(--journey-color);
+  background: color-mix(in srgb, var(--journey-color) 12%, transparent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--journey-color) 15%, transparent);
+}
+
+.journey-info {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.journey-info strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.96rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.journey-info p {
+  margin: 3px 0 0;
+  font-size: 0.80rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.journey-badge {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  position: relative;
+  z-index: 1;
+}
+
+.journey-step.unlocked .journey-badge {
+  background: var(--journey-color);
+  color: #fff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--journey-color) 40%, transparent);
+  animation: badgePop 400ms cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+.journey-step:not(.unlocked) .journey-badge {
+  background: var(--line);
+  color: var(--muted);
+}
+
+.journey-unlock-btn {
+  min-height: 34px;
+  border: 1.5px solid var(--journey-color, var(--line));
+  border-radius: 8px;
+  background: transparent;
+  color: var(--journey-color, var(--muted));
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0 12px;
+  transition: background 140ms, color 140ms;
+  white-space: nowrap;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.journey-unlock-btn:hover {
+  background: var(--journey-color, var(--line));
+  color: #fff;
+}
+
+/* Dark mode */
+body.dark-mode .journey-step {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+body.dark-mode .journey-icon { background: #111b2e; }
+
 /* ====================================================================
    RESPONSIVE — 360px
    ==================================================================== */
@@ -1907,4 +2137,100 @@ body.dark-mode .escala-col { border-color: #000; }
     flex-direction: row !important;
     justify-content: space-between !important;
   }
+}
+/* ====================================================================
+   JOURNEY — medalhas e conquistas (adicionado)
+   ==================================================================== */
+.journey-medal {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  transition: box-shadow 220ms, transform 220ms;
+}
+
+.journey-medal.unlocked {
+  background: color-mix(in srgb, var(--journey-color) 14%, transparent);
+  border: 2.5px solid var(--journey-color);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--journey-color) 14%, transparent);
+}
+
+.journey-medal.locked {
+  background: var(--soft);
+  border: 2.5px dashed var(--line);
+}
+
+.journey-medal-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.journey-medal-check {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--journey-color);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--surface);
+  animation: badgePop 380ms cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+.journey-medal-num {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--muted);
+}
+
+.journey-level-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 20px;
+  font-size: 0.70rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  transition: background 200ms, color 200ms;
+}
+
+.journey-badge-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.journey-trophy {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
+  animation: badgePop 400ms cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+body.dark-mode .journey-medal.locked {
+  background: #111b2e;
+  border-color: var(--line);
+}
+
+/* ====================================================================
+   MODAL DE CONFIRMAÇÃO (overlayIn / modalUp reutilizados do welcome)
+   ==================================================================== */
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
