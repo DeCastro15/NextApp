@@ -180,15 +180,136 @@ function buildDefaultEvents() {
 const defaultEvents = buildDefaultEvents();
 
 const playlists = [
-  { title: "Louvor Next", text: "Setlist para chegar no culto cantando junto.", progress: 76 },
-  { title: "Semana com Deus", text: "Musicas para devocional e tempo de oracao.", progress: 52 },
-  { title: "Pre-culto", text: "Uma selecao rapida para preparar o coracao.", progress: 34 },
+  {
+    id: 'pl1',
+    title: "Louvor Next 🔥",
+    text: "Setlist para chegar no culto cantando junto.",
+    description: "A nossa playlist oficial do culto Next! Músicas selecionadas pela equipe de louvor para você adorar em casa, no trajeto e antes do culto. Chegue aquecido e conectado com Deus.",
+    tracks: 18,
+    duration: "1h 12min",
+    emoji: "🎵",
+    color: "#2f73f8",
+    spotifyUrl: "https://open.spotify.com/playlist/37i9dQZF1DX8FwnYE6PRoc",
+    progress: 76
+  },
+  {
+    id: 'pl2',
+    title: "Semana com Deus",
+    text: "Músicas para devocional e tempo de oração.",
+    description: "Uma curadoria especial para acompanhar seus momentos devocionais. Faixas que preparam o coração para ouvir a voz de Deus durante a semana.",
+    tracks: 24,
+    duration: "1h 38min",
+    emoji: "🙏",
+    color: "#8b5cf6",
+    spotifyUrl: "https://open.spotify.com/playlist/37i9dQZF1DWTl4y3vgJOXW",
+    progress: 52
+  },
+  {
+    id: 'pl3',
+    title: "Pré-culto",
+    text: "Uma seleção rápida para preparar o coração.",
+    description: "30 minutos antes do culto, coloca essa playlist. Músicas de adoração e foco para entrar no culto de coração aberto e pronto para receber.",
+    tracks: 9,
+    duration: "34min",
+    emoji: "⚡",
+    color: "#c6ff45",
+    spotifyUrl: "https://open.spotify.com/playlist/37i9dQZF1DX1s9knjP51Oa",
+    progress: 34
+  },
+  {
+    id: 'pl4',
+    title: "Fire — Gospel Rap BR",
+    text: "Rap gospel nacional que representa a fé sem vergonha.",
+    description: "Para quem representa Jesus no estilo. Os melhores do gospel rap brasileiro reunidos em uma playlist que não deixa o fogo apagar.",
+    tracks: 31,
+    duration: "2h 04min",
+    emoji: "🎤",
+    color: "#f59e0b",
+    spotifyUrl: "https://open.spotify.com/playlist/37i9dQZF1DX186v583rmzp",
+    progress: 88
+  },
 ];
 
 const planos = [
-  { title: "7 dias em Proverbios", text: "Sabedoria para escola, familia e amizades.", progress: 43 },
-  { title: "Identidade em Cristo", text: "Leituras curtas para lembrar quem voce e em Deus.", progress: 18 },
-  { title: "Evangelho de Marcos", text: "Um passo por dia acompanhando Jesus.", progress: 61 },
+  {
+    id: 'plan1',
+    title: "7 dias em Provérbios",
+    text: "Sabedoria para escola, família e amizades.",
+    description: "Um plano de leitura para quem quer desenvolver sabedoria prática para o dia a dia. Cada dia traz um capítulo de Provérbios com uma reflexão curta sobre como aplicar na sua vida.",
+    days: 7,
+    emoji: "📖",
+    color: "#f59e0b",
+    tag: "Sabedoria",
+    verses: [
+      { day: 1, ref: "Provérbios 1:1-7", theme: "O início da sabedoria" },
+      { day: 2, ref: "Provérbios 3:5-6", theme: "Confiar no Senhor" },
+      { day: 3, ref: "Provérbios 4:20-27", theme: "Guardar o coração" },
+      { day: 4, ref: "Provérbios 6:6-11", theme: "Diligência e trabalho" },
+      { day: 5, ref: "Provérbios 12:1-11", theme: "Disciplina e amor" },
+      { day: 6, ref: "Provérbios 17:17-28", theme: "Amizade verdadeira" },
+      { day: 7, ref: "Provérbios 31:10-31", theme: "Caráter e fidelidade" },
+    ],
+    progress: 43
+  },
+  {
+    id: 'plan2',
+    title: "Identidade em Cristo",
+    text: "Leituras curtas para lembrar quem você é em Deus.",
+    description: "Quem você é não depende do que o mundo diz. Este plano vai te reconectar com sua identidade como filho(a) de Deus através de versículos poderosos e reflexões práticas.",
+    days: 5,
+    emoji: "✨",
+    color: "#8b5cf6",
+    tag: "Identidade",
+    verses: [
+      { day: 1, ref: "Efésios 1:3-6", theme: "Escolhidos antes da criação" },
+      { day: 2, ref: "João 1:12-13", theme: "Filhos de Deus" },
+      { day: 3, ref: "2 Coríntios 5:17", theme: "Nova criação" },
+      { day: 4, ref: "Romanos 8:14-17", theme: "Herdeiros de Deus" },
+      { day: 5, ref: "Colossenses 3:1-4", theme: "Escondidos em Cristo" },
+    ],
+    progress: 18
+  },
+  {
+    id: 'plan3',
+    title: "Evangelho de Marcos",
+    text: "Um passo por dia acompanhando Jesus.",
+    description: "O Evangelho de Marcos é o mais dinâmico dos quatro. Acompanhe Jesus em ação — milagres, ensinamentos e o caminho até a cruz — em 16 dias de leitura intensa e transformadora.",
+    days: 16,
+    emoji: "🦁",
+    color: "#10b981",
+    tag: "Evangelhos",
+    verses: [
+      { day: 1, ref: "Marcos 1:1-20", theme: "O começo do evangelho" },
+      { day: 2, ref: "Marcos 1:21-45", theme: "Autoridade de Jesus" },
+      { day: 3, ref: "Marcos 2:1-17", theme: "Cura e perdão" },
+      { day: 4, ref: "Marcos 3:1-19", theme: "Os doze discípulos" },
+      { day: 5, ref: "Marcos 4:1-34", theme: "Parábola do semeador" },
+      { day: 6, ref: "Marcos 4:35-5:20", theme: "Jesus acalma a tempestade" },
+      { day: 7, ref: "Marcos 6:1-29", theme: "Rejeição e missão" },
+      { day: 8, ref: "Marcos 6:30-56", theme: "Cinco mil alimentados" },
+    ],
+    progress: 61
+  },
+  {
+    id: 'plan4',
+    title: "Ansiedade & Fé",
+    text: "O que a Bíblia diz sobre ansiedade e como vencer.",
+    description: "Para quem enfrenta ansiedade no cotidiano, este plano traz versículos terapêuticos e reflexões sobre como a fé transforma nosso estado emocional. 7 dias de paz.",
+    days: 7,
+    emoji: "🕊️",
+    color: "#2f73f8",
+    tag: "Saúde Mental",
+    verses: [
+      { day: 1, ref: "Filipenses 4:6-7", theme: "A paz que excede o entendimento" },
+      { day: 2, ref: "Mateus 6:25-34", theme: "Não se preocupe" },
+      { day: 3, ref: "Salmo 46:1-11", theme: "Deus é o nosso refugio" },
+      { day: 4, ref: "1 Pedro 5:6-7", theme: "Lançar toda ansiedade sobre Ele" },
+      { day: 5, ref: "Isaías 41:10", theme: "Não temas" },
+      { day: 6, ref: "João 14:27", theme: "Paz eu vos deixo" },
+      { day: 7, ref: "Romanos 8:28", theme: "Todas as coisas cooperam" },
+    ],
+    progress: 0
+  },
 ];
 
 const defaultProducts = [
@@ -1021,22 +1142,177 @@ function selectAgendaItem(index) {
 }
 
 function renderContentCards(target, items) {
-  document.querySelector(target).innerHTML = items
-    .map(
-      (item) => `
-        <article class="content-card">
-          <div class="content-art"></div>
-          <div>
-            <h3>${item.title}</h3>
-            <p>${item.text}</p>
+  const isPlaylist = target === '#playlists';
+  const el = document.querySelector(target);
+  if (!el) return;
+  el.innerHTML = items
+    .map((item) => {
+      const accentColor = item.color || 'var(--blue)';
+      const progressPct = item.progress || 0;
+      return `
+        <article class="content-card" data-content-id="${item.id}" style="cursor:pointer; position:relative; overflow:hidden; border-radius:16px; transition:transform 200ms, box-shadow 200ms;">
+          <div class="content-art" style="background:linear-gradient(135deg,${accentColor}33,${accentColor}11); border-bottom:2px solid ${accentColor}33; display:flex; align-items:center; justify-content:center; min-height:88px; font-size:2.6rem;">
+            ${item.emoji || (isPlaylist ? '🎵' : '📖')}
           </div>
-          <div class="progress-bar" aria-label="Progresso">
-            <span style="width: ${item.progress}%"></span>
+          <div style="padding:12px 14px 8px;">
+            ${item.tag ? `<span style="font-size:0.68rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${accentColor};margin-bottom:4px;display:block;">${item.tag}</span>` : ''}
+            <h3 style="margin:0 0 4px;font-size:0.95rem;">${item.title}</h3>
+            <p style="margin:0;font-size:0.80rem;line-height:1.5;color:var(--muted);">${item.text}</p>
+            ${isPlaylist && item.tracks ? `<p style="margin:4px 0 0;font-size:0.72rem;color:var(--muted);font-weight:600;">${item.tracks} músicas · ${item.duration}</p>` : ''}
+            ${!isPlaylist && item.days ? `<p style="margin:4px 0 0;font-size:0.72rem;color:var(--muted);font-weight:600;">${item.days} dias de leitura</p>` : ''}
+          </div>
+          <div style="padding:0 14px 14px;">
+            <div class="progress-bar" aria-label="Progresso" style="height:5px;border-radius:99px;background:var(--line);overflow:hidden;">
+              <span style="width:${progressPct}%;height:100%;display:block;background:${accentColor};border-radius:99px;transition:width 600ms;"></span>
+            </div>
+            ${progressPct > 0 ? `<p style="font-size:0.70rem;color:var(--muted);font-weight:700;margin:4px 0 0;text-align:right;">${progressPct}% concluído</p>` : `<p style="font-size:0.70rem;color:var(--muted);font-weight:700;margin:4px 0 0;text-align:right;">Não iniciado</p>`}
           </div>
         </article>
-      `,
-    )
+      `;
+    })
     .join("");
+
+  // Bind clicks to open modal
+  el.querySelectorAll('[data-content-id]').forEach(card => {
+    card.addEventListener('mouseenter', () => { card.style.transform = 'translateY(-3px)'; card.style.boxShadow = '0 12px 32px rgba(0,0,0,0.12)'; });
+    card.addEventListener('mouseleave', () => { card.style.transform = ''; card.style.boxShadow = ''; });
+    card.addEventListener('click', () => {
+      const id = card.dataset.contentId;
+      const item = isPlaylist ? playlists.find(p => p.id === id) : planos.find(p => p.id === id);
+      if (!item) return;
+      isPlaylist ? openPlaylistModal(item) : openPlanModal(item);
+    });
+  });
+}
+
+// ── Playlist Modal ──────────────────────────────────────
+function openPlaylistModal(item) {
+  const existing = document.getElementById('contentModalOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'contentModalOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9992;background:rgba(8,12,24,0.82);backdrop-filter:blur(8px);display:grid;place-items:center;padding:16px;animation:overlayIn 220ms ease forwards;';
+
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:24px;width:min(480px,100%);overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.4);animation:modalUp 380ms cubic-bezier(0.16,1,0.3,1) forwards;display:flex;flex-direction:column;max-height:90vh;">
+      <!-- Banner colorido -->
+      <div style="background:linear-gradient(135deg,${item.color},${item.color}88);padding:32px 24px 28px;position:relative;text-align:center;flex-shrink:0;">
+        <button id="closeContentModal" type="button" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;color:#fff;font-size:1.1rem;display:grid;place-items:center;backdrop-filter:blur(4px);">×</button>
+        <div style="font-size:3.5rem;margin-bottom:12px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.3));">${item.emoji}</div>
+        <h2 style="margin:0 0 6px;font-family:'Syne',sans-serif;font-weight:900;font-size:1.4rem;color:#fff;letter-spacing:-0.02em;">${item.title}</h2>
+        <p style="margin:0;color:rgba(255,255,255,0.8);font-size:0.84rem;font-weight:600;">${item.tracks} músicas · ${item.duration}</p>
+      </div>
+      <!-- Corpo com scroll -->
+      <div style="padding:20px 22px 16px;overflow-y:auto;flex:1;">
+        <p style="margin:0 0 16px;font-size:0.93rem;line-height:1.65;color:var(--ink);">${item.description}</p>
+        <div style="background:var(--soft);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;border:1px solid var(--line);">
+          <div style="font-size:1.5rem;">🎧</div>
+          <div>
+            <p style="margin:0;font-size:0.82rem;font-weight:800;color:var(--ink);">Disponível no Spotify</p>
+            <p style="margin:2px 0 0;font-size:0.75rem;color:var(--muted);">Toque em Escutar para abrir a playlist</p>
+          </div>
+        </div>
+        ${item.progress > 0 ? `
+          <div style="margin-top:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:0.80rem;font-weight:700;color:var(--muted);">Seu progresso</span>
+              <span style="font-size:0.80rem;font-weight:800;color:${item.color};">${item.progress}%</span>
+            </div>
+            <div style="height:6px;border-radius:99px;background:var(--line);overflow:hidden;">
+              <div style="width:${item.progress}%;height:100%;background:${item.color};border-radius:99px;transition:width 800ms 200ms;"></div>
+            </div>
+          </div>` : ''}
+      </div>
+      <!-- Botão dentro do modal, no fundo, sem position:absolute -->
+      <div style="padding:12px 22px 20px;flex-shrink:0;">
+        <a href="${item.spotifyUrl}" target="_blank" rel="noopener" style="
+          display:flex;align-items:center;justify-content:center;gap:8px;
+          min-height:50px;border-radius:12px;background:${item.color};
+          color:#fff;font-family:'Syne',sans-serif;font-weight:900;font-size:0.95rem;
+          text-decoration:none;letter-spacing:0.02em;
+          box-shadow:0 8px 24px ${item.color}55;
+          transition:transform 150ms,box-shadow 150ms;
+          " onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 32px ${item.color}66'" onmouseleave="this.style.transform='';this.style.boxShadow='0 8px 24px ${item.color}55'">
+          🎵 Escutar no Spotify
+        </a>
+      </div>
+    </div>
+  `;
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#closeContentModal')?.addEventListener('click', () => overlay.remove());
+  document.body.appendChild(overlay);
+}
+
+// ── Plan Modal ──────────────────────────────────────────
+function openPlanModal(item) {
+  const existing = document.getElementById('contentModalOverlay');
+  if (existing) existing.remove();
+
+  const versesHTML = (item.verses || []).map(v => `
+    <div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:var(--soft);border:1px solid var(--line);margin-bottom:8px;align-items:flex-start;">
+      <div style="width:28px;height:28px;border-radius:8px;background:${item.color};display:grid;place-items:center;flex-shrink:0;font-size:0.72rem;font-weight:900;color:#fff;">${v.day}</div>
+      <div>
+        <p style="margin:0;font-size:0.88rem;font-weight:800;color:var(--ink);">${v.theme}</p>
+        <p style="margin:2px 0 0;font-size:0.78rem;color:${item.color};font-weight:700;">📖 ${v.ref}</p>
+      </div>
+    </div>
+  `).join('');
+
+  const overlay = document.createElement('div');
+  overlay.id = 'contentModalOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9992;background:rgba(8,12,24,0.82);backdrop-filter:blur(8px);display:grid;place-items:center;padding:16px;animation:overlayIn 220ms ease forwards;';
+
+  overlay.innerHTML = `
+    <div style="background:var(--surface);border-radius:24px;width:min(480px,100%);overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.4);animation:modalUp 380ms cubic-bezier(0.16,1,0.3,1) forwards;display:flex;flex-direction:column;max-height:90vh;">
+      <!-- Banner -->
+      <div style="background:linear-gradient(135deg,${item.color},${item.color}88);padding:28px 24px 24px;position:relative;flex-shrink:0;">
+        <button id="closeContentModal" type="button" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;color:#fff;font-size:1.1rem;display:grid;place-items:center;">×</button>
+        <span style="display:inline-block;font-size:0.68rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;background:rgba(255,255,255,0.2);color:#fff;border-radius:99px;padding:3px 10px;margin-bottom:10px;">${item.tag}</span>
+        <h2 style="margin:0 0 6px;font-family:'Syne',sans-serif;font-weight:900;font-size:1.35rem;color:#fff;letter-spacing:-0.02em;">${item.emoji} ${item.title}</h2>
+        <p style="margin:0;color:rgba(255,255,255,0.8);font-size:0.83rem;font-weight:600;">${item.days} dias de leitura</p>
+      </div>
+      <!-- Scroll body -->
+      <div style="padding:18px 20px 16px;overflow-y:auto;flex:1;">
+        <p style="margin:0 0 16px;font-size:0.92rem;line-height:1.65;color:var(--ink);">${item.description}</p>
+        
+        ${item.progress > 0 ? `
+          <div style="background:${item.color}11;border:1px solid ${item.color}33;border-radius:12px;padding:12px 14px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:0.80rem;font-weight:800;color:var(--ink);">Progresso atual</span>
+              <span style="font-size:0.80rem;font-weight:900;color:${item.color};">${item.progress}%</span>
+            </div>
+            <div style="height:6px;border-radius:99px;background:var(--line);overflow:hidden;">
+              <div style="width:${item.progress}%;height:100%;background:${item.color};border-radius:99px;"></div>
+            </div>
+          </div>` : ''}
+
+        <p style="margin:0 0 10px;font-size:0.78rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);">Versículos do plano</p>
+        ${versesHTML || '<p style="color:var(--muted);font-size:0.88rem;">Versículos em breve.</p>'}
+      </div>
+      <!-- Botão dentro do modal, no fundo, sem position:absolute -->
+      <div style="padding:12px 20px 20px;flex-shrink:0;">
+        <button type="button" id="planStartBtn" style="
+          width:100%;min-height:50px;border-radius:12px;border:none;background:${item.color};
+          color:#fff;font-family:'Syne',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;
+          box-shadow:0 8px 24px ${item.color}55;letter-spacing:0.02em;transition:transform 150ms;
+          " onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
+          📖 Iniciar Plano
+        </button>
+      </div>
+    </div>
+  `;
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('#closeContentModal')?.addEventListener('click', () => overlay.remove());
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#planStartBtn')?.addEventListener('click', function() {
+    this.textContent = '✓ Plano iniciado! Bons estudos 🙏';
+    this.style.background = '#10b981';
+    this.disabled = true;
+  });
 }
 
 function canManageShop() {
@@ -2426,7 +2702,7 @@ function renderBRFeed() {
   const el = document.getElementById('brFeed');
   if (!el) return;
 
-  const posts = getBRPosts().slice(0, 30);
+  const posts = getBRPosts(); // already sorted newest first
 
   if (!posts.length) {
     el.innerHTML = `
@@ -2438,80 +2714,75 @@ function renderBRFeed() {
     return;
   }
 
-  el.innerHTML = posts.map(post => `
-    <article style="
-      border:1px solid var(--line); border-radius:14px;
-      background:var(--surface); overflow:hidden;
-      box-shadow:0 2px 12px rgba(13,17,23,0.05);">
+  // Group posts by dayKey, sorted newest first
+  const grouped = [];
+  const seen = new Map();
+  for (const post of posts) {
+    if (!seen.has(post.dayKey)) {
+      seen.set(post.dayKey, []);
+      grouped.push({ dayKey: post.dayKey, posts: seen.get(post.dayKey) });
+    }
+    seen.get(post.dayKey).push(post);
+  }
 
-      <!-- Header do post -->
-      <div style="
-        display:flex; align-items:center; gap:10px;
-        padding:12px 14px 10px;">
-        <div style="
-          width:38px; height:38px; border-radius:50%; flex-shrink:0;
-          background:var(--ink); color:#fff; display:grid; place-items:center;
-          font-family:'Syne',sans-serif; font-weight:900; font-size:0.82rem;
-          overflow:hidden;">
-          ${post.userPhoto
-            ? `<img src="${post.userPhoto}" style="width:100%;height:100%;object-fit:cover;" alt="" />`
-            : initials(post.userName)}
-        </div>
-        <div style="flex:1; min-width:0;">
-          <strong style="font-size:0.90rem; display:block; line-height:1.2;">
-            ${post.userName}
-          </strong>
-          <span style="font-size:0.74rem; color:var(--muted);">
-            ${brRelativeTime(post.createdAt)}
-          </span>
-        </div>
-        ${canManage() ? `
-          <button type="button" data-br-delete="${post.id}" style="
-            background:none; border:none; cursor:pointer; color:var(--muted);
-            font-size:0.78rem; padding:4px 8px; border-radius:6px;
-            border:1px solid var(--line);">
-            Remover
-          </button>` : ''}
+  function dayLabel(dayKey) {
+    const today = brTodayKey();
+    if (dayKey === today) return '📅 Hoje';
+    // compute yesterday
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const yesterday = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+    if (dayKey === yesterday) return '⏪ Ontem';
+    // parse dayKey
+    const parts = dayKey.split('-');
+    const dt = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    return dt.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
+  el.innerHTML = grouped.map(group => `
+    <div class="br-day-group" style="animation:fadeSlideIn 400ms ease forwards;">
+      <!-- Day header -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;margin-top:4px;">
+        <div style="height:1px;flex:1;background:var(--line);"></div>
+        <span style="font-size:0.78rem;font-weight:800;letter-spacing:0.04em;color:var(--muted);white-space:nowrap;padding:4px 10px;background:var(--soft);border-radius:99px;border:1px solid var(--line);">${dayLabel(group.dayKey)}</span>
+        <div style="height:1px;flex:1;background:var(--line);"></div>
       </div>
-
-      <!-- Foto -->
-      ${post.photo ? `
-        <div style="background:#000; cursor:zoom-in;" data-br-lightbox="${post.photo}">
-          <img src="${post.photo}" alt="Post de ${post.userName}"
-               style="width:100%; max-height:420px; object-fit:cover; display:block;" />
-        </div>` : ''}
-
-      <!-- Caption + versículo -->
-      <div style="padding:12px 14px 14px; display:grid; gap:6px;">
-        ${post.caption ? `
-          <p style="margin:0; font-size:0.92rem; line-height:1.55; color:var(--ink);">
-            <strong>${post.userName.split(' ')[0]}</strong> ${post.caption}
-          </p>` : ''}
-        ${post.verse ? `
-          <p style="
-            margin:0; font-size:0.80rem; color:var(--blue);
-            font-weight:700; padding:6px 10px;
-            background:rgba(47,115,248,0.07); border-radius:6px;
-            border-left:3px solid var(--blue);">
-            📖 ${post.verse}
-          </p>` : ''}
-
-        <!-- Curtidas -->
-        <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
-          <button type="button" data-br-like="${post.id}" style="
-            background:none; border:none; cursor:pointer; padding:0;
-            font-size:1.1rem; line-height:1; display:flex; align-items:center; gap:4px;">
-            ${(post.likes || []).includes(currentUser.id) ? '🔥' : '🤍'}
-            <span style="font-size:0.80rem; font-weight:700; color:var(--muted);">
-              ${(post.likes || []).length || ''}
-            </span>
-          </button>
-        </div>
+      <!-- Posts of this day -->
+      <div style="display:grid;gap:14px;">
+        ${group.posts.map(post => `
+          <article style="border:1px solid var(--line);border-radius:16px;background:var(--surface);overflow:hidden;box-shadow:0 2px 12px rgba(13,17,23,0.05);transition:transform 200ms,box-shadow 200ms;" onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.1)'" onmouseleave="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(13,17,23,0.05)'">
+            <!-- Header do post -->
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 14px 10px;">
+              <div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:var(--ink);color:#fff;display:grid;place-items:center;font-family:'Syne',sans-serif;font-weight:900;font-size:0.82rem;overflow:hidden;border:2px solid var(--line);">
+                ${post.userPhoto ? `<img src="${post.userPhoto}" style="width:100%;height:100%;object-fit:cover;" alt="" />` : initials(post.userName)}
+              </div>
+              <div style="flex:1;min-width:0;">
+                <strong style="font-size:0.90rem;display:block;line-height:1.2;">${post.userName}</strong>
+                <span style="font-size:0.74rem;color:var(--muted);">${brRelativeTime(post.createdAt)}</span>
+              </div>
+              ${canManage() ? `<button type="button" data-br-delete="${post.id}" style="background:none;border:1px solid var(--line);cursor:pointer;color:var(--muted);font-size:0.76rem;padding:3px 8px;border-radius:6px;transition:all 150ms;" onmouseenter="this.style.background='#fef2f2';this.style.color='#dc2626'" onmouseleave="this.style.background='none';this.style.color='var(--muted)'">Remover</button>` : ''}
+            </div>
+            <!-- Foto -->
+            ${post.photo ? `<div style="background:#000;cursor:zoom-in;overflow:hidden;" data-br-lightbox="${post.photo}"><img src="${post.photo}" alt="Post de ${post.userName}" style="width:100%;max-height:420px;object-fit:cover;display:block;transition:transform 300ms;" onmouseenter="this.style.transform='scale(1.02)'" onmouseleave="this.style.transform=''" /></div>` : ''}
+            <!-- Caption + versículo -->
+            <div style="padding:12px 14px 14px;display:grid;gap:6px;">
+              ${post.caption ? `<p style="margin:0;font-size:0.92rem;line-height:1.55;color:var(--ink);"><strong>${post.userName.split(' ')[0]}</strong> ${post.caption}</p>` : ''}
+              ${post.verse ? `<p style="margin:0;font-size:0.80rem;color:var(--blue);font-weight:700;padding:6px 10px;background:rgba(47,115,248,0.07);border-radius:6px;border-left:3px solid var(--blue);">📖 ${post.verse}</p>` : ''}
+              <!-- Curtidas -->
+              <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+                <button type="button" data-br-like="${post.id}" style="background:none;border:none;cursor:pointer;padding:4px 8px;font-size:1.1rem;line-height:1;display:flex;align-items:center;gap:4px;border-radius:8px;transition:background 150ms;" onmouseenter="this.style.background='var(--soft)'" onmouseleave="this.style.background='none'">
+                  ${(post.likes || []).includes(currentUser.id) ? '🔥' : '🤍'}
+                  <span style="font-size:0.80rem;font-weight:700;color:var(--muted);">${(post.likes || []).length || ''}</span>
+                </button>
+              </div>
+            </div>
+          </article>
+        `).join('')}
       </div>
-    </article>
+    </div>
   `).join('');
 
-  // Lightbox nas fotos
+  // Lightbox
   el.querySelectorAll('[data-br-lightbox]').forEach(el => {
     el.addEventListener('click', () => openBRLightbox(el.dataset.brLightbox));
   });
@@ -2524,10 +2795,11 @@ function renderBRFeed() {
   // Remover (líderes)
   el.querySelectorAll('[data-br-delete]').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (!toastConfirm()) return;
-      dbApi?.remove(BR_COLLECTION, btn.dataset.brDelete);
-      renderBRFeed();
-      renderBRStories();
+      showConfirm('Remover este post do BibleRats?', () => {
+        dbApi?.remove(BR_COLLECTION, btn.dataset.brDelete);
+        renderBRFeed();
+        renderBRStories();
+      });
     });
   });
 }
@@ -2643,7 +2915,94 @@ function bindBREvents() {
   });
 }
 
+function renderBRStreakBoard() {
+  const el = document.getElementById('brStreakBoard');
+  if (!el) return;
+
+  const users = getUsers();
+  const posts = getBRPosts();
+  const now = new Date();
+
+  // Build streaks
+  const userStreaks = users
+    .map(u => ({ ...u, streak: getBRStreak(u.id) }))
+    .filter(u => u.streak > 0)
+    .sort((a, b) => b.streak - a.streak)
+    .slice(0, 5);
+
+  // Weekly check-in counts
+  const weekAgo = Date.now() - 7 * 86400000;
+  const monthAgo = Date.now() - 30 * 86400000;
+
+  function countFor(userId, since) {
+    const days = new Set(posts.filter(p => p.userId === userId && p.createdAt > since).map(p => p.dayKey));
+    return days.size;
+  }
+
+  // Who leads this week
+  const weekLeader = users
+    .map(u => ({ ...u, count: countFor(u.id, weekAgo) }))
+    .sort((a, b) => b.count - a.count)[0];
+
+  const monthLeader = users
+    .map(u => ({ ...u, count: countFor(u.id, monthAgo) }))
+    .sort((a, b) => b.count - a.count)[0];
+
+  const myStreak = getBRStreak(currentUser.id);
+  const myWeek = countFor(currentUser.id, weekAgo);
+  const myMonth = countFor(currentUser.id, monthAgo);
+
+  el.innerHTML = `
+    <!-- My stats -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+      <div style="background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;">
+        <p style="margin:0;font-size:1.6rem;font-weight:900;font-family:'Syne',sans-serif;color:var(--blue);">${myStreak}</p>
+        <p style="margin:2px 0 0;font-size:0.70rem;font-weight:700;color:var(--muted);">🔥 Sequência</p>
+      </div>
+      <div style="background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;">
+        <p style="margin:0;font-size:1.6rem;font-weight:900;font-family:'Syne',sans-serif;color:#8b5cf6;">${myWeek}</p>
+        <p style="margin:2px 0 0;font-size:0.70rem;font-weight:700;color:var(--muted);">📅 Esta semana</p>
+      </div>
+      <div style="background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;">
+        <p style="margin:0;font-size:1.6rem;font-weight:900;font-family:'Syne',sans-serif;color:#10b981;">${myMonth}</p>
+        <p style="margin:2px 0 0;font-size:0.70rem;font-weight:700;color:var(--muted);">🗓️ Este mês</p>
+      </div>
+    </div>
+
+    <!-- Leaders -->
+    ${weekLeader?.count > 0 || monthLeader?.count > 0 ? `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+        ${weekLeader?.count > 0 ? `
+          <div style="background:linear-gradient(135deg,rgba(47,115,248,0.12),transparent);border:1px solid rgba(47,115,248,0.25);border-radius:12px;padding:11px 12px;">
+            <p style="margin:0;font-size:0.68rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:var(--blue);">⭐ Líder da semana</p>
+            <p style="margin:3px 0 0;font-size:0.86rem;font-weight:800;color:var(--ink);">${weekLeader.name.split(' ')[0]}</p>
+            <p style="margin:1px 0 0;font-size:0.72rem;color:var(--muted);font-weight:600;">${weekLeader.count} check-ins</p>
+          </div>` : ''}
+        ${monthLeader?.count > 0 ? `
+          <div style="background:linear-gradient(135deg,rgba(16,185,129,0.12),transparent);border:1px solid rgba(16,185,129,0.25);border-radius:12px;padding:11px 12px;">
+            <p style="margin:0;font-size:0.68rem;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:#10b981;">🏆 Líder do mês</p>
+            <p style="margin:3px 0 0;font-size:0.86rem;font-weight:800;color:var(--ink);">${monthLeader.name.split(' ')[0]}</p>
+            <p style="margin:1px 0 0;font-size:0.72rem;color:var(--muted);font-weight:600;">${monthLeader.count} check-ins</p>
+          </div>` : ''}
+      </div>` : ''}
+
+    <!-- Top Streaks -->
+    ${userStreaks.length > 0 ? `
+      <p style="margin:0 0 8px;font-size:0.72rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);">Top sequências</p>
+      <div style="display:grid;gap:6px;">
+        ${userStreaks.map((u, i) => `
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--soft);border-radius:10px;border:1px solid var(--line);">
+            <span style="font-size:0.82rem;font-weight:900;color:var(--muted);width:16px;text-align:center;">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
+            <span style="flex:1;font-size:0.86rem;font-weight:700;color:var(--ink);">${u.name.split(' ')[0]}</span>
+            <span style="font-size:0.82rem;font-weight:900;color:#ff6b35;">🔥 ${u.streak}d</span>
+          </div>
+        `).join('')}
+      </div>` : ''}
+  `;
+}
+
 function renderBibleRats() {
+  renderBRStreakBoard();
   renderBRStories();
   renderBRFeed();
 }
