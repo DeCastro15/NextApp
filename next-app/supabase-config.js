@@ -12,6 +12,87 @@
  * ENQUANTO USE_MOCK_DB = true: tudo fica no localStorage do navegador.
  */
 
+// ---------------------------------------------------------------------------
+// NextSecurity — sanitização e proteção contra ataques básicos
+// ---------------------------------------------------------------------------
+const NextSecurity = (() => {
+  const RATE_LIMIT_KEY = 'next_login_attempts';
+  const MAX_ATTEMPTS   = 5;
+  const LOCKOUT_MS     = 15 * 60 * 1000; // 15 minutos
+
+  /** Remove tags HTML e caracteres perigosos de uma string */
+  function sanitize(str) {
+    if (typeof str !== 'string') return '';
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;')
+      .replace(/\//g, '&#x2F;')
+      .trim()
+      .slice(0, 500); // limita comprimento
+  }
+
+  /** Valida e-mail com regex simples */
+  function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+  }
+
+  /** Retorna true se o IP/browser está em lockout */
+  function isLockedOut() {
+    try {
+      const data = JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || '{}');
+      if (data.lockedUntil && Date.now() < data.lockedUntil) return true;
+      return false;
+    } catch { return false; }
+  }
+
+  /** Retorna segundos restantes do lockout (0 se não há) */
+  function lockoutSecondsLeft() {
+    try {
+      const data = JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || '{}');
+      if (data.lockedUntil && Date.now() < data.lockedUntil) {
+        return Math.ceil((data.lockedUntil - Date.now()) / 1000);
+      }
+      return 0;
+    } catch { return 0; }
+  }
+
+  /** Registra uma tentativa de login falha */
+  function recordFailedAttempt() {
+    try {
+      const data = JSON.parse(localStorage.getItem(RATE_LIMIT_KEY) || '{}');
+      data.attempts = (data.attempts || 0) + 1;
+      data.lastAttempt = Date.now();
+      if (data.attempts >= MAX_ATTEMPTS) {
+        data.lockedUntil = Date.now() + LOCKOUT_MS;
+        data.attempts = 0;
+      }
+      localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(data));
+    } catch { /* ignore */ }
+  }
+
+  /** Limpa o histórico de tentativas após login bem-sucedido */
+  function clearAttempts() {
+    localStorage.removeItem(RATE_LIMIT_KEY);
+  }
+
+  /** Gera um token CSRF simples para formulários sensíveis */
+  function generateCsrfToken() {
+    const token = Array.from(crypto.getRandomValues(new Uint8Array(16)))
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+    sessionStorage.setItem('next_csrf', token);
+    return token;
+  }
+
+  function validateCsrfToken(token) {
+    return token && token === sessionStorage.getItem('next_csrf');
+  }
+
+  return { sanitize, isValidEmail, isLockedOut, lockoutSecondsLeft, recordFailedAttempt, clearAttempts, generateCsrfToken, validateCsrfToken };
+})();
+
 const SUPABASE_CONFIG = {
   url: 'https://hsqdsfrxxygiydnoeojo.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhzcWRzZnJ4eHlnaXlkbm9lb2pvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzQ1MTcsImV4cCI6MjA5NTE1MDUxN30.vsXLMKQpI0lD-hkN-ohXVHAdxOzvFmkd_yjVsH7n4p4',
@@ -26,15 +107,23 @@ const NextAuth = (() => {
   const SESSION_KEY = 'next_session';
 
   async function register(name, email, password) {
+    const cleanName  = NextSecurity.sanitize(name);
+    const cleanEmail = String(email || '').toLowerCase().trim();
+    const cleanPass  = String(password || '').trim();
+
+    if (!cleanName || cleanName.length < 2)          throw new Error('Nome inválido.');
+    if (!NextSecurity.isValidEmail(cleanEmail))       throw new Error('E-mail inválido.');
+    if (!cleanPass || cleanPass.length < 6)           throw new Error('A senha deve ter ao menos 6 caracteres.');
+
     if (USE_MOCK_DB) {
       const storedUsers = NextDB.getAll('next_users');
-      if (storedUsers.some(u => u.email === email.toLowerCase())) return null;
+      if (storedUsers.some(u => u.email === cleanEmail)) return null;
 
       const newUser = {
         id: `usr_${Date.now()}`,
-        name,
-        email: email.toLowerCase(),
-        password,
+        name: cleanName,
+        email: cleanEmail,
+        password: cleanPass,
         role: 'jovem',
         hasServo: false
       };
@@ -73,14 +162,36 @@ const NextAuth = (() => {
   ];
 
   async function login(email, password) {
+    // Verificação de rate limiting
+    if (NextSecurity.isLockedOut()) {
+      const secs = NextSecurity.lockoutSecondsLeft();
+      const mins = Math.ceil(secs / 60);
+      throw new Error(`Muitas tentativas. Tente novamente em ${mins} minuto(s).`);
+    }
+
+    // Sanitização básica de entrada
+    const cleanEmail = String(email || '').toLowerCase().trim();
+    const cleanPass  = String(password || '').trim();
+
+    if (!NextSecurity.isValidEmail(cleanEmail)) {
+      throw new Error('E-mail inválido.');
+    }
+    if (!cleanPass || cleanPass.length < 4) {
+      throw new Error('Senha inválida.');
+    }
+
     if (USE_MOCK_DB) {
       const storedUsers = NextDB.getAll('next_users');
       const allUsers = storedUsers.length > 0 ? [...storedUsers, ...MOCK_USERS] : MOCK_USERS;
 
       const user = allUsers.find(
-        (u) => u.email === email.toLowerCase() && u.password === password
+        (u) => u.email === cleanEmail && u.password === cleanPass
       );
-      if (!user) return null;
+      if (!user) {
+        NextSecurity.recordFailedAttempt();
+        return null;
+      }
+      NextSecurity.clearAttempts();
       const session = { ...user };
       delete session.password;
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -150,8 +261,9 @@ const NextAuth = (() => {
 // ---------------------------------------------------------------------------
 // NextDB — operações CRUD (mock localStorage, interface idêntica para Supabase)
 // ---------------------------------------------------------------------------
-const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey) : null;
-window.originalSupabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey) : null;
+// Só conecta ao Supabase quando USE_MOCK_DB = false — evita erros de rede no modo mock
+const supabaseClient = (!USE_MOCK_DB && window.supabase) ? window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey) : null;
+window.originalSupabaseClient = (!USE_MOCK_DB && window.supabase) ? window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey) : null;
 
 const NextDB = (() => {
   function getAll(collection) {
@@ -182,7 +294,7 @@ const NextDB = (() => {
 
     const cloudTables = ['next_messages', 'next_prayers', 'next_group_messages',
                          'next_events', 'next_scales', 'next_applications',
-                         'next_products', 'next_posts'];
+                         'next_products', 'next_posts', 'next_journey_requests'];
 
     if (supabaseClient && cloudTables.includes(collection)) {
       const { error } = await supabaseClient.from(collection).upsert(item);

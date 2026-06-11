@@ -128,7 +128,7 @@ const leaderPhotos = {
 const cultStages = ["inativo", "Louvor", "Pregação", "Apelo", "Finalizado"];
 
 const permissionsByRole = {
-  jovem:      ["home", "agenda", "conteudo", "loja", "oracao", "conversa", "servir", "biblerats", "perfil", "configuracoes"],
+  jovem:      ["home", "agenda", "conteudo", "loja", "oracao", "conversa", "biblerats", "perfil", "configuracoes"],
   responsavel:["home", "agenda", "culto", "biblerats", "perfil", "configuracoes"],
   lider:      ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "gestao", "biblerats", "perfil", "configuracoes"],
   sublider:   ["home", "agenda", "culto", "conteudo", "loja", "conversa", "mensagens", "escalas", "gestao", "biblerats", "perfil", "configuracoes"],
@@ -343,8 +343,20 @@ function canManageAll() {
   return ["pastor", "missionaria", "admin"].includes(currentUser.role);
 }
 
+function hasCompletedRequiredJourney(userId) {
+  const data = getJourneyData(userId);
+  return ["descubra", "avance", "fundamentos"].every((stepId) => Boolean(data[stepId]));
+}
+
+function hasServingAccess(user = currentUser) {
+  if (!user) return false;
+  if (user.hasServo) return true;
+  return user.role === "jovem" && hasCompletedRequiredJourney(user.id);
+}
+
 function allowedViews() {
   const base = [...(permissionsByRole[currentUser.role] || permissionsByRole.jovem)];
+  if (hasServingAccess(currentUser) && !base.includes("servir")) base.push("servir");
   if (currentUser.hasServo && !base.includes("servos")) base.push("servos");
   if (currentUser.hasServo && !base.includes("grupos")) base.push("grupos"); 
   if (canManage() && !base.includes("grupos")) base.push("grupos");
@@ -395,6 +407,93 @@ function getEvents() {
 
 function getProducts() {
   return getAll("next_products", defaultProducts).filter((product) => product.available !== false);
+}
+
+const CONTENT_COLLECTIONS = {
+  playlists: "next_playlists",
+  planos: "next_planos",
+};
+
+function canManageContent() {
+  return canManage();
+}
+
+function getContentItems(collection, defaults = []) {
+  const saved = dbApi?.getAll(collection) || [];
+  return uniqueById([...saved, ...defaults]).filter((item) => !item.deleted);
+}
+
+function getPlaylists() {
+  return getContentItems(CONTENT_COLLECTIONS.playlists, playlists);
+}
+
+function getPlanos() {
+  return getContentItems(CONTENT_COLLECTIONS.planos, planos);
+}
+
+function cleanContentText(value, maxLength = 500) {
+  return String(value || "").replace(/[<>]/g, "").trim().slice(0, maxLength);
+}
+
+function normalizeContentColor(value, fallback = "#2f73f8") {
+  const color = String(value || "").trim();
+  return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
+}
+
+function getPlaylistUrl(item) {
+  return item.url || item.spotifyUrl || item.youtubeUrl || "";
+}
+
+function getPlaylistProvider(item) {
+  const url = getPlaylistUrl(item).toLowerCase();
+  if (url.includes("spotify.com")) return "Spotify";
+  if (url.includes("youtube.com") || url.includes("youtu.be")) return "YouTube";
+  return "playlist";
+}
+
+function isAcceptedPlaylistUrl(url) {
+  try {
+    const parsed = new URL(String(url || "").trim());
+    const host = parsed.hostname.replace(/^www\./, "");
+    return parsed.protocol === "https:" &&
+      (host.includes("spotify.com") || host.includes("youtube.com") || host === "youtu.be");
+  } catch {
+    return false;
+  }
+}
+
+function formatPlaylistMeta(item) {
+  const parts = [];
+  if (item.tracks) parts.push(`${item.tracks} músicas`);
+  if (item.duration) parts.push(item.duration);
+  return parts.join(" · ") || `Disponível no ${getPlaylistProvider(item)}`;
+}
+
+function parsePlanVerses(raw) {
+  return String(raw || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+      const [refPart, ...themeParts] = line.split("|");
+      const ref = cleanContentText(refPart, 120);
+      const theme = cleanContentText(themeParts.join("|"), 180) || ref;
+      return { day: index + 1, ref, theme };
+    })
+    .filter((verse) => verse.ref);
+}
+
+function formatPlanVersesInput(plan) {
+  return (plan.verses || []).map((verse) => `${verse.ref} | ${verse.theme}`).join("\n");
 }
 
 function getMessages() {
@@ -571,6 +670,7 @@ function setView(target) {
   if (target === "grupos") { renderGroupList(); renderGroupChat(); renderChecklist(); }
   if (target === "mensagens") { renderLeaderInbox(); markMessagesAsSeen(); }
   if (target === "gestao") renderAdminLists();
+  if (target === "conteudo") renderContent();
   if (target === "culto") renderCultStatus();
   if (target === "perfil") renderPerfil();
   if (target === "escalas") {
@@ -1143,30 +1243,86 @@ function selectAgendaItem(index) {
 
 function renderContentCards(target, items) {
   const isPlaylist = target === '#playlists';
+  const type = isPlaylist ? 'playlists' : 'planos';
+  const isManager = canManageContent();
   const el = document.querySelector(target);
   if (!el) return;
+
+  if (!items.length) {
+    el.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--muted);">
+        <div style="font-size:2.5rem;margin-bottom:10px;">${isPlaylist ? '🎵' : '📖'}</div>
+        <p style="margin:0;font-size:0.9rem;font-weight:600;">Nenhum conteúdo cadastrado ainda.</p>
+        ${isManager ? `<p style="margin:6px 0 0;font-size:0.8rem;">Use o botão <strong>＋ Adicionar</strong> acima para criar o primeiro.</p>` : ''}
+      </div>`;
+    return;
+  }
+
   el.innerHTML = items
     .map((item) => {
-      const accentColor = item.color || 'var(--blue)';
+      const accentColor = normalizeContentColor(item.color);
       const progressPct = item.progress || 0;
+      const title = escapeHtml(item.title);
+      const text = escapeHtml(item.text);
+      const tag = escapeHtml(item.tag);
+      const emoji = escapeHtml(item.emoji || (isPlaylist ? '🎵' : '📖'));
+      const meta = isPlaylist ? escapeHtml(formatPlaylistMeta(item)) : `${item.days || 0} dias de leitura`;
+      const provider = isPlaylist ? getPlaylistProvider(item) : null;
+      const providerIcon = provider === 'Spotify' ? '🎧' : provider === 'YouTube' ? '▶️' : '';
+      const providerBadge = provider && provider !== 'playlist' ? `
+        <span style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);
+          color:#fff;font-size:0.65rem;font-weight:800;padding:3px 7px;border-radius:99px;letter-spacing:0.04em;">
+          ${providerIcon} ${provider}
+        </span>` : '';
+
       return `
-        <article class="content-card" data-content-id="${item.id}" style="cursor:pointer; position:relative; overflow:hidden; border-radius:16px; transition:transform 200ms, box-shadow 200ms;">
-          <div class="content-art" style="background:linear-gradient(135deg,${accentColor}33,${accentColor}11); border-bottom:2px solid ${accentColor}33; display:flex; align-items:center; justify-content:center; min-height:88px; font-size:2.6rem;">
-            ${item.emoji || (isPlaylist ? '🎵' : '📖')}
+        <article class="content-card" data-content-id="${item.id}"
+          style="cursor:pointer;position:relative;overflow:hidden;border-radius:16px;
+            transition:transform 200ms,box-shadow 200ms;border:1.5px solid transparent;">
+          <!-- Arte / banner -->
+          <div class="content-art" style="background:linear-gradient(135deg,${accentColor}44,${accentColor}18);
+            border-bottom:2px solid ${accentColor}33;display:flex;align-items:center;
+            justify-content:center;min-height:88px;font-size:2.8rem;position:relative;">
+            ${emoji}
+            ${providerBadge}
           </div>
+          <!-- Corpo -->
           <div style="padding:12px 14px 8px;">
-            ${item.tag ? `<span style="font-size:0.68rem;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${accentColor};margin-bottom:4px;display:block;">${item.tag}</span>` : ''}
-            <h3 style="margin:0 0 4px;font-size:0.95rem;">${item.title}</h3>
-            <p style="margin:0;font-size:0.80rem;line-height:1.5;color:var(--muted);">${item.text}</p>
-            ${isPlaylist && item.tracks ? `<p style="margin:4px 0 0;font-size:0.72rem;color:var(--muted);font-weight:600;">${item.tracks} músicas · ${item.duration}</p>` : ''}
-            ${!isPlaylist && item.days ? `<p style="margin:4px 0 0;font-size:0.72rem;color:var(--muted);font-weight:600;">${item.days} dias de leitura</p>` : ''}
+            ${item.tag ? `<span style="font-size:0.65rem;font-weight:800;letter-spacing:0.07em;text-transform:uppercase;
+              color:${accentColor};margin-bottom:4px;display:block;">${tag}</span>` : ''}
+            <h3 style="margin:0 0 4px;font-size:0.93rem;font-weight:800;line-height:1.3;">${title}</h3>
+            <p style="margin:0;font-size:0.79rem;line-height:1.5;color:var(--muted);">${text}</p>
+            <p style="margin:4px 0 0;font-size:0.71rem;color:${accentColor};font-weight:700;">${meta}</p>
           </div>
-          <div style="padding:0 14px 14px;">
-            <div class="progress-bar" aria-label="Progresso" style="height:5px;border-radius:99px;background:var(--line);overflow:hidden;">
-              <span style="width:${progressPct}%;height:100%;display:block;background:${accentColor};border-radius:99px;transition:width 600ms;"></span>
+          <!-- Progresso -->
+          <div style="padding:0 14px ${isManager ? '8px' : '14px'};">
+            <div style="height:4px;border-radius:99px;background:var(--line);overflow:hidden;margin-bottom:4px;">
+              <span style="width:${progressPct}%;height:100%;display:block;background:${accentColor};
+                border-radius:99px;transition:width 600ms;"></span>
             </div>
-            ${progressPct > 0 ? `<p style="font-size:0.70rem;color:var(--muted);font-weight:700;margin:4px 0 0;text-align:right;">${progressPct}% concluído</p>` : `<p style="font-size:0.70rem;color:var(--muted);font-weight:700;margin:4px 0 0;text-align:right;">Não iniciado</p>`}
+            <p style="font-size:0.68rem;color:var(--muted);font-weight:700;margin:0;text-align:right;">
+              ${progressPct > 0 ? `${progressPct}% concluído` : 'Não iniciado'}
+            </p>
           </div>
+          <!-- Botões de gestão -->
+          ${isManager ? `
+            <div style="display:flex;gap:6px;padding:0 10px 10px;">
+              <button type="button" data-edit-content="${item.id}" data-content-type="${type}"
+                style="flex:1;min-height:30px;border-radius:8px;border:1.5px solid var(--line);
+                  background:var(--surface);color:var(--ink);font-size:0.73rem;font-weight:700;
+                  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;
+                  transition:border-color 150ms;">
+                ✎ Editar
+              </button>
+              <button type="button" data-delete-content="${item.id}" data-content-type="${type}"
+                style="flex:1;min-height:30px;border-radius:8px;border:1.5px solid #fca5a5;
+                  background:#fef2f2;color:#dc2626;font-size:0.73rem;font-weight:700;
+                  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;
+                  transition:background 150ms;">
+                🗑 Remover
+              </button>
+            </div>
+          ` : ""}
         </article>
       `;
     })
@@ -1174,13 +1330,36 @@ function renderContentCards(target, items) {
 
   // Bind clicks to open modal
   el.querySelectorAll('[data-content-id]').forEach(card => {
-    card.addEventListener('mouseenter', () => { card.style.transform = 'translateY(-3px)'; card.style.boxShadow = '0 12px 32px rgba(0,0,0,0.12)'; });
-    card.addEventListener('mouseleave', () => { card.style.transform = ''; card.style.boxShadow = ''; });
-    card.addEventListener('click', () => {
+    card.addEventListener('mouseenter', () => {
+      card.style.transform = 'translateY(-3px)';
+      card.style.boxShadow = '0 12px 32px rgba(0,0,0,0.14)';
+      card.style.borderColor = 'var(--blue)';
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+      card.style.boxShadow = '';
+      card.style.borderColor = 'transparent';
+    });
+    card.addEventListener('click', (event) => {
+      if (event.target.closest('[data-edit-content], [data-delete-content]')) return;
       const id = card.dataset.contentId;
-      const item = isPlaylist ? playlists.find(p => p.id === id) : planos.find(p => p.id === id);
+      const item = isPlaylist ? getPlaylists().find(p => p.id === id) : getPlanos().find(p => p.id === id);
       if (!item) return;
       isPlaylist ? openPlaylistModal(item) : openPlanModal(item);
+    });
+  });
+
+  el.querySelectorAll('[data-edit-content]').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      editContentItem(btn.dataset.contentType, btn.dataset.editContent);
+    });
+  });
+
+  el.querySelectorAll('[data-delete-content]').forEach((btn) => {
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      deleteContentItem(btn.dataset.contentType, btn.dataset.deleteContent);
     });
   });
 }
@@ -1190,6 +1369,16 @@ function openPlaylistModal(item) {
   const existing = document.getElementById('contentModalOverlay');
   if (existing) existing.remove();
 
+  const color = normalizeContentColor(item.color);
+  const title = escapeHtml(item.title);
+  const description = escapeHtml(item.description);
+  const emoji = escapeHtml(item.emoji || '🎵');
+  const meta = escapeHtml(formatPlaylistMeta(item));
+  const provider = getPlaylistProvider(item);
+  const playlistUrl = getPlaylistUrl(item);
+  const safeUrl = escapeHtml(playlistUrl);
+  const actionLabel = provider === 'YouTube' ? 'Assistir no YouTube' : provider === 'Spotify' ? 'Escutar no Spotify' : 'Abrir playlist';
+
   const overlay = document.createElement('div');
   overlay.id = 'contentModalOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9992;background:rgba(8,12,24,0.82);backdrop-filter:blur(8px);display:grid;place-items:center;padding:16px;animation:overlayIn 220ms ease forwards;';
@@ -1197,44 +1386,44 @@ function openPlaylistModal(item) {
   overlay.innerHTML = `
     <div style="background:var(--surface);border-radius:24px;width:min(480px,100%);overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.4);animation:modalUp 380ms cubic-bezier(0.16,1,0.3,1) forwards;display:flex;flex-direction:column;max-height:90vh;">
       <!-- Banner colorido -->
-      <div style="background:linear-gradient(135deg,${item.color},${item.color}88);padding:32px 24px 28px;position:relative;text-align:center;flex-shrink:0;">
+      <div style="background:linear-gradient(135deg,${color},${color}88);padding:32px 24px 28px;position:relative;text-align:center;flex-shrink:0;">
         <button id="closeContentModal" type="button" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;color:#fff;font-size:1.1rem;display:grid;place-items:center;backdrop-filter:blur(4px);">×</button>
-        <div style="font-size:3.5rem;margin-bottom:12px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.3));">${item.emoji}</div>
-        <h2 style="margin:0 0 6px;font-family:'Syne',sans-serif;font-weight:900;font-size:1.4rem;color:#fff;letter-spacing:-0.02em;">${item.title}</h2>
-        <p style="margin:0;color:rgba(255,255,255,0.8);font-size:0.84rem;font-weight:600;">${item.tracks} músicas · ${item.duration}</p>
+        <div style="font-size:3.5rem;margin-bottom:12px;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.3));">${emoji}</div>
+        <h2 style="margin:0 0 6px;font-family:'Syne',sans-serif;font-weight:900;font-size:1.4rem;color:#fff;letter-spacing:-0.02em;">${title}</h2>
+        <p style="margin:0;color:rgba(255,255,255,0.8);font-size:0.84rem;font-weight:600;">${meta}</p>
       </div>
       <!-- Corpo com scroll -->
       <div style="padding:20px 22px 16px;overflow-y:auto;flex:1;">
-        <p style="margin:0 0 16px;font-size:0.93rem;line-height:1.65;color:var(--ink);">${item.description}</p>
+        <p style="margin:0 0 16px;font-size:0.93rem;line-height:1.65;color:var(--ink);">${description}</p>
         <div style="background:var(--soft);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;border:1px solid var(--line);">
           <div style="font-size:1.5rem;">🎧</div>
           <div>
-            <p style="margin:0;font-size:0.82rem;font-weight:800;color:var(--ink);">Disponível no Spotify</p>
-            <p style="margin:2px 0 0;font-size:0.75rem;color:var(--muted);">Toque em Escutar para abrir a playlist</p>
+            <p style="margin:0;font-size:0.82rem;font-weight:800;color:var(--ink);">Disponível no ${provider}</p>
+            <p style="margin:2px 0 0;font-size:0.75rem;color:var(--muted);">Toque no botão para abrir a playlist</p>
           </div>
         </div>
         ${item.progress > 0 ? `
           <div style="margin-top:16px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
               <span style="font-size:0.80rem;font-weight:700;color:var(--muted);">Seu progresso</span>
-              <span style="font-size:0.80rem;font-weight:800;color:${item.color};">${item.progress}%</span>
+              <span style="font-size:0.80rem;font-weight:800;color:${color};">${item.progress}%</span>
             </div>
             <div style="height:6px;border-radius:99px;background:var(--line);overflow:hidden;">
-              <div style="width:${item.progress}%;height:100%;background:${item.color};border-radius:99px;transition:width 800ms 200ms;"></div>
+              <div style="width:${item.progress}%;height:100%;background:${color};border-radius:99px;transition:width 800ms 200ms;"></div>
             </div>
           </div>` : ''}
       </div>
       <!-- Botão dentro do modal, no fundo, sem position:absolute -->
       <div style="padding:12px 22px 20px;flex-shrink:0;">
-        <a href="${item.spotifyUrl}" target="_blank" rel="noopener" style="
+        <a href="${safeUrl}" target="_blank" rel="noopener" style="
           display:flex;align-items:center;justify-content:center;gap:8px;
-          min-height:50px;border-radius:12px;background:${item.color};
+          min-height:50px;border-radius:12px;background:${color};
           color:#fff;font-family:'Syne',sans-serif;font-weight:900;font-size:0.95rem;
           text-decoration:none;letter-spacing:0.02em;
-          box-shadow:0 8px 24px ${item.color}55;
+          box-shadow:0 8px 24px ${color}55;
           transition:transform 150ms,box-shadow 150ms;
-          " onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 32px ${item.color}66'" onmouseleave="this.style.transform='';this.style.boxShadow='0 8px 24px ${item.color}55'">
-          🎵 Escutar no Spotify
+          " onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 32px ${color}66'" onmouseleave="this.style.transform='';this.style.boxShadow='0 8px 24px ${color}55'">
+          🎵 ${actionLabel}
         </a>
       </div>
     </div>
@@ -1250,12 +1439,17 @@ function openPlanModal(item) {
   const existing = document.getElementById('contentModalOverlay');
   if (existing) existing.remove();
 
+  const color = normalizeContentColor(item.color, "#f59e0b");
+  const title = escapeHtml(item.title);
+  const description = escapeHtml(item.description);
+  const emoji = escapeHtml(item.emoji || "📖");
+  const tag = escapeHtml(item.tag || "Plano");
   const versesHTML = (item.verses || []).map(v => `
     <div style="display:flex;gap:12px;padding:12px;border-radius:10px;background:var(--soft);border:1px solid var(--line);margin-bottom:8px;align-items:flex-start;">
-      <div style="width:28px;height:28px;border-radius:8px;background:${item.color};display:grid;place-items:center;flex-shrink:0;font-size:0.72rem;font-weight:900;color:#fff;">${v.day}</div>
+      <div style="width:28px;height:28px;border-radius:8px;background:${color};display:grid;place-items:center;flex-shrink:0;font-size:0.72rem;font-weight:900;color:#fff;">${v.day}</div>
       <div>
-        <p style="margin:0;font-size:0.88rem;font-weight:800;color:var(--ink);">${v.theme}</p>
-        <p style="margin:2px 0 0;font-size:0.78rem;color:${item.color};font-weight:700;">📖 ${v.ref}</p>
+        <p style="margin:0;font-size:0.88rem;font-weight:800;color:var(--ink);">${escapeHtml(v.theme)}</p>
+        <p style="margin:2px 0 0;font-size:0.78rem;color:${color};font-weight:700;">📖 ${escapeHtml(v.ref)}</p>
       </div>
     </div>
   `).join('');
@@ -1267,24 +1461,24 @@ function openPlanModal(item) {
   overlay.innerHTML = `
     <div style="background:var(--surface);border-radius:24px;width:min(480px,100%);overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.4);animation:modalUp 380ms cubic-bezier(0.16,1,0.3,1) forwards;display:flex;flex-direction:column;max-height:90vh;">
       <!-- Banner -->
-      <div style="background:linear-gradient(135deg,${item.color},${item.color}88);padding:28px 24px 24px;position:relative;flex-shrink:0;">
+      <div style="background:linear-gradient(135deg,${color},${color}88);padding:28px 24px 24px;position:relative;flex-shrink:0;">
         <button id="closeContentModal" type="button" style="position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.2);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;color:#fff;font-size:1.1rem;display:grid;place-items:center;">×</button>
-        <span style="display:inline-block;font-size:0.68rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;background:rgba(255,255,255,0.2);color:#fff;border-radius:99px;padding:3px 10px;margin-bottom:10px;">${item.tag}</span>
-        <h2 style="margin:0 0 6px;font-family:'Syne',sans-serif;font-weight:900;font-size:1.35rem;color:#fff;letter-spacing:-0.02em;">${item.emoji} ${item.title}</h2>
+        <span style="display:inline-block;font-size:0.68rem;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;background:rgba(255,255,255,0.2);color:#fff;border-radius:99px;padding:3px 10px;margin-bottom:10px;">${tag}</span>
+        <h2 style="margin:0 0 6px;font-family:'Syne',sans-serif;font-weight:900;font-size:1.35rem;color:#fff;letter-spacing:-0.02em;">${emoji} ${title}</h2>
         <p style="margin:0;color:rgba(255,255,255,0.8);font-size:0.83rem;font-weight:600;">${item.days} dias de leitura</p>
       </div>
       <!-- Scroll body -->
       <div style="padding:18px 20px 16px;overflow-y:auto;flex:1;">
-        <p style="margin:0 0 16px;font-size:0.92rem;line-height:1.65;color:var(--ink);">${item.description}</p>
+        <p style="margin:0 0 16px;font-size:0.92rem;line-height:1.65;color:var(--ink);">${description}</p>
         
         ${item.progress > 0 ? `
-          <div style="background:${item.color}11;border:1px solid ${item.color}33;border-radius:12px;padding:12px 14px;margin-bottom:16px;">
+          <div style="background:${color}11;border:1px solid ${color}33;border-radius:12px;padding:12px 14px;margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <span style="font-size:0.80rem;font-weight:800;color:var(--ink);">Progresso atual</span>
-              <span style="font-size:0.80rem;font-weight:900;color:${item.color};">${item.progress}%</span>
+              <span style="font-size:0.80rem;font-weight:900;color:${color};">${item.progress}%</span>
             </div>
             <div style="height:6px;border-radius:99px;background:var(--line);overflow:hidden;">
-              <div style="width:${item.progress}%;height:100%;background:${item.color};border-radius:99px;"></div>
+              <div style="width:${item.progress}%;height:100%;background:${color};border-radius:99px;"></div>
             </div>
           </div>` : ''}
 
@@ -1294,9 +1488,9 @@ function openPlanModal(item) {
       <!-- Botão dentro do modal, no fundo, sem position:absolute -->
       <div style="padding:12px 20px 20px;flex-shrink:0;">
         <button type="button" id="planStartBtn" style="
-          width:100%;min-height:50px;border-radius:12px;border:none;background:${item.color};
+          width:100%;min-height:50px;border-radius:12px;border:none;background:${color};
           color:#fff;font-family:'Syne',sans-serif;font-weight:900;font-size:0.95rem;cursor:pointer;
-          box-shadow:0 8px 24px ${item.color}55;letter-spacing:0.02em;transition:transform 150ms;
+          box-shadow:0 8px 24px ${color}55;letter-spacing:0.02em;transition:transform 150ms;
           " onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''">
           📖 Iniciar Plano
         </button>
@@ -1312,6 +1506,345 @@ function openPlanModal(item) {
     this.textContent = '✓ Plano iniciado! Bons estudos 🙏';
     this.style.background = '#10b981';
     this.disabled = true;
+  });
+}
+
+function contentCollectionForType(type) {
+  return CONTENT_COLLECTIONS[type === "planos" ? "planos" : "playlists"];
+}
+
+function getContentListByType(type) {
+  return type === "planos" ? getPlanos() : getPlaylists();
+}
+
+function getContentItemByType(type, id) {
+  return getContentListByType(type).find((item) => item.id === id) || null;
+}
+
+function renderContentAdminPanel() {
+  const panel = document.querySelector("#contentAdminPanel");
+  const addBtn = document.querySelector("#contentAddBtn");
+  if (!panel) return;
+  const canManage = canManageContent();
+  // Painel fica fechado por padrão; botão "+ Adicionar" abre ele
+  if (addBtn) addBtn.classList.toggle("hidden", !canManage);
+  // Se não tem permissão, esconde e fecha
+  if (!canManage) {
+    panel.classList.add("hidden");
+  }
+  updateContentFormFields();
+}
+
+function renderContent() {
+  renderContentAdminPanel();
+  renderContentCards("#playlists", getPlaylists());
+  renderContentCards("#planos", getPlanos());
+  // Bind botão "Adicionar" — clona o elemento para limpar listeners antigos
+  const addBtnOrig = document.querySelector("#contentAddBtn");
+  if (addBtnOrig) {
+    const addBtn = addBtnOrig.cloneNode(true);
+    addBtnOrig.parentNode.replaceChild(addBtn, addBtnOrig);
+    addBtn.addEventListener("click", () => {
+      const panel = document.querySelector("#contentAdminPanel");
+      const isHidden = panel.classList.contains("hidden");
+      if (isHidden) {
+        resetContentForm();
+        panel.classList.remove("hidden");
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+        addBtn.textContent = "✕ Fechar";
+      } else {
+        panel.classList.add("hidden");
+        addBtn.innerHTML = '<span style="font-size:1.1rem;line-height:1;">＋</span> Adicionar';
+      }
+    });
+  }
+  // Bind cancel
+  const cancelBtn = document.querySelector("#contentCancelBtn");
+  if (cancelBtn && !cancelBtn._bound) {
+    cancelBtn._bound = true;
+    cancelBtn.addEventListener("click", () => {
+      const panel = document.querySelector("#contentAdminPanel");
+      const addBtn = document.querySelector("#contentAddBtn");
+      panel.classList.add("hidden");
+      if (addBtn) addBtn.innerHTML = '<span style="font-size:1.1rem;line-height:1;">＋</span> Adicionar';
+      resetContentForm();
+    });
+  }
+  // Sync color picker <-> text input
+  const picker = document.querySelector("#contentColorPicker");
+  const colorText = document.querySelector("#contentColor");
+  if (picker && colorText && !picker._bound) {
+    picker._bound = true;
+    picker.addEventListener("input", () => { colorText.value = picker.value; });
+    colorText.addEventListener("input", () => {
+      if (/^#[0-9a-f]{6}$/i.test(colorText.value)) picker.value = colorText.value;
+    });
+  }
+  // Bind verses counter
+  const versesTA = document.querySelector("#contentVerses");
+  if (versesTA && !versesTA._bound) {
+    versesTA._bound = true;
+    versesTA.addEventListener("input", updateVersesCount);
+  }
+  // Bind playlist URL preview
+  const urlInput = document.querySelector("#contentPlaylistUrl");
+  if (urlInput && !urlInput._bound) {
+    urlInput._bound = true;
+    let previewTimeout;
+    urlInput.addEventListener("input", () => {
+      clearTimeout(previewTimeout);
+      previewTimeout = setTimeout(() => updatePlaylistPreview(urlInput.value), 800);
+    });
+  }
+  // Bind type selector
+  const typeSelect = document.querySelector("#contentType");
+  if (typeSelect && !typeSelect._bound) {
+    typeSelect._bound = true;
+    typeSelect.addEventListener("change", updateContentFormFields);
+  }
+  // Bind form submit
+  const form = document.querySelector("#contentManageForm");
+  if (form && !form._bound) {
+    form._bound = true;
+    form.addEventListener("submit", saveContentItem);
+  }
+}
+
+function updateVersesCount() {
+  const ta = document.querySelector("#contentVerses");
+  const counter = document.querySelector("#versesCount");
+  if (!ta || !counter) return;
+  const count = parsePlanVerses(ta.value).length;
+  counter.textContent = count === 0 ? "0 versículos adicionados" : `${count} versículo${count > 1 ? "s" : ""} adicionado${count > 1 ? "s" : ""}`;
+  counter.style.color = count > 0 ? "#10b981" : "var(--muted)";
+}
+
+function updatePlaylistPreview(url) {
+  const preview = document.querySelector("#contentPlaylistPreview");
+  const hint = document.querySelector("#contentUrlHint");
+  if (!preview) return;
+  try {
+    const parsed = new URL(url.trim());
+    const host = parsed.hostname.replace(/^www\./, "");
+    // Spotify
+    if (host.includes("spotify.com") && (url.includes("/playlist/") || url.includes("/album/"))) {
+      const parts = parsed.pathname.split("/").filter(Boolean);
+      const id = parts[parts.length - 1];
+      preview.style.display = "block";
+      preview.innerHTML = `<iframe style="border-radius:12px;width:100%;height:152px;border:none;" src="https://open.spotify.com/embed/${parts[parts.length - 2]}/${id}?utm_source=generator&theme=0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+      if (hint) hint.textContent = "✓ Playlist do Spotify detectada";
+      if (hint) hint.style.color = "#10b981";
+      return;
+    }
+    // YouTube playlist
+    if ((host.includes("youtube.com") || host === "youtu.be")) {
+      const listId = parsed.searchParams.get("list");
+      const videoId = parsed.searchParams.get("v") || (host === "youtu.be" ? parsed.pathname.slice(1) : null);
+      const embedId = listId ? `videoseries?list=${listId}` : (videoId ? videoId : null);
+      if (embedId) {
+        preview.style.display = "block";
+        preview.innerHTML = `<iframe style="border-radius:12px;width:100%;height:180px;border:none;" src="https://www.youtube.com/embed/${embedId}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>`;
+        if (hint) hint.textContent = "✓ Vídeo/playlist do YouTube detectado";
+        if (hint) hint.style.color = "#10b981";
+        return;
+      }
+    }
+  } catch (e) { /* invalid URL */ }
+  preview.style.display = "none";
+  preview.innerHTML = "";
+  if (hint) hint.textContent = "Cole um link do Spotify ou YouTube para ver a prévia.";
+  if (hint) hint.style.color = "var(--muted)";
+}
+
+function updateContentFormFields() {
+  const type = document.querySelector("#contentType")?.value || "playlists";
+  const playlistFields = document.querySelector("#contentPlaylistFields");
+  const planFields = document.querySelector("#contentPlanFields");
+  if (playlistFields) playlistFields.style.display = type === "playlists" ? "grid" : "none";
+  if (planFields) planFields.style.display = type === "planos" ? "grid" : "none";
+  // Sync default emoji / color
+  const emojiInput = document.querySelector("#contentEmoji");
+  const colorInput = document.querySelector("#contentColor");
+  const picker = document.querySelector("#contentColorPicker");
+  if (emojiInput && !emojiInput.value) emojiInput.placeholder = type === "planos" ? "📖" : "🎵";
+  const defaultColor = type === "planos" ? "#f59e0b" : "#2f73f8";
+  if (colorInput && !colorInput.value) { colorInput.placeholder = defaultColor; }
+  if (colorInput && colorInput.value && picker) picker.value = normalizeContentColor(colorInput.value, defaultColor);
+}
+
+function resetContentForm(clearMessage = true) {
+  const form = document.querySelector("#contentManageForm");
+  if (!form) return;
+  form.reset();
+  document.querySelector("#contentItemId").value = "";
+  document.querySelector("#contentOriginalType").value = "";
+  document.querySelector("#contentFormTitle").textContent = "✦ Adicionar conteúdo";
+  document.querySelector("#contentCancelBtn").style.display = "none";
+  const colorInput = document.querySelector("#contentColor");
+  const picker = document.querySelector("#contentColorPicker");
+  if (colorInput) colorInput.value = "#2f73f8";
+  if (picker) picker.value = "#2f73f8";
+  // Clear preview
+  const preview = document.querySelector("#contentPlaylistPreview");
+  if (preview) { preview.style.display = "none"; preview.innerHTML = ""; }
+  const hint = document.querySelector("#contentUrlHint");
+  if (hint) { hint.textContent = "Cole um link do Spotify ou YouTube para ver a prévia."; hint.style.color = "var(--muted)"; }
+  // Clear verse counter
+  const counter = document.querySelector("#versesCount");
+  if (counter) { counter.textContent = "0 versículos adicionados"; counter.style.color = "var(--muted)"; }
+  if (clearMessage) document.querySelector("#contentAdminMessage").textContent = "";
+  updateContentFormFields();
+}
+
+function saveContentItem(event) {
+  event.preventDefault();
+
+  const type = document.querySelector("#contentType").value;
+  const originalType = document.querySelector("#contentOriginalType").value;
+  const id = document.querySelector("#contentItemId").value;
+  const title = cleanContentText(document.querySelector("#contentTitle").value, 120);
+  const text = cleanContentText(document.querySelector("#contentText").value, 180);
+  const description = cleanContentText(document.querySelector("#contentDescription").value, 900);
+  const emoji = cleanContentText(document.querySelector("#contentEmoji").value, 8) || (type === "planos" ? "📖" : "🎵");
+  const color = normalizeContentColor(document.querySelector("#contentColor").value, type === "planos" ? "#f59e0b" : "#2f73f8");
+  const message = document.querySelector("#contentAdminMessage");
+  const existing = id ? getContentItemByType(originalType || type, id) : null;
+  const itemId = id || `content_${Date.now()}`;
+  const markOriginalAsDeleted = () => {
+    if (id && originalType && originalType !== type) {
+      saveItem(contentCollectionForType(originalType), { id, deleted: true, updatedAt: Date.now() });
+    }
+  };
+
+  if (!title || !text || !description) {
+    message.textContent = "Preencha título, chamada e descrição.";
+    return;
+  }
+
+  if (type === "playlists") {
+    const url = document.querySelector("#contentPlaylistUrl").value.trim();
+    if (!isAcceptedPlaylistUrl(url)) {
+      message.textContent = "Informe um link válido do Spotify ou YouTube.";
+      return;
+    }
+
+    const tracks = Number(document.querySelector("#contentTracks").value) || 0;
+    const duration = cleanContentText(document.querySelector("#contentDuration").value, 40);
+    markOriginalAsDeleted();
+    saveItem(CONTENT_COLLECTIONS.playlists, {
+      ...existing,
+      id: itemId,
+      title,
+      text,
+      description,
+      emoji,
+      color,
+      url,
+      spotifyUrl: url.includes("spotify.com") ? url : "",
+      youtubeUrl: url.includes("youtube.com") || url.includes("youtu.be") ? url : "",
+      tracks,
+      duration,
+      progress: existing?.progress || 0,
+      createdAt: existing?.createdAt || Date.now(),
+      updatedAt: Date.now(),
+      deleted: false,
+    });
+  } else {
+    const verses = parsePlanVerses(document.querySelector("#contentVerses").value);
+    const tag = cleanContentText(document.querySelector("#contentPlanTag").value, 60) || "Plano";
+    if (!verses.length) {
+      message.textContent = "Adicione ao menos um versículo do plano.";
+      return;
+    }
+
+    markOriginalAsDeleted();
+    saveItem(CONTENT_COLLECTIONS.planos, {
+      ...existing,
+      id: itemId,
+      title,
+      text,
+      description,
+      emoji,
+      color,
+      tag,
+      verses,
+      days: verses.length,
+      progress: existing?.progress || 0,
+      createdAt: existing?.createdAt || Date.now(),
+      updatedAt: Date.now(),
+      deleted: false,
+    });
+  }
+
+  renderContent();
+  resetContentForm(false);
+  const verb = id ? "atualizado" : "cadastrado";
+  message.textContent = `✓ Conteúdo ${verb} com sucesso!`;
+  message.style.color = "#10b981";
+  toast(`Conteúdo ${verb}! 🎉`, "success", 3000);
+  // Close panel after 1.5s
+  setTimeout(() => {
+    const panel = document.querySelector("#contentAdminPanel");
+    const addBtn = document.querySelector("#contentAddBtn");
+    if (panel) panel.classList.add("hidden");
+    if (addBtn) addBtn.innerHTML = '<span style="font-size:1.1rem;line-height:1;">＋</span> Adicionar';
+  }, 1500);
+}
+
+function editContentItem(type, id) {
+  const item = getContentItemByType(type, id);
+  if (!item || !canManageContent()) return;
+
+  const panel = document.querySelector("#contentAdminPanel");
+  const addBtn = document.querySelector("#contentAddBtn");
+
+  // Open panel
+  if (panel) panel.classList.remove("hidden");
+  if (addBtn) addBtn.innerHTML = '✕ Fechar';
+
+  document.querySelector("#contentFormTitle").textContent = "✎ Editar conteúdo";
+  document.querySelector("#contentItemId").value = item.id;
+  document.querySelector("#contentOriginalType").value = type;
+  document.querySelector("#contentType").value = type;
+  document.querySelector("#contentTitle").value = item.title || "";
+  document.querySelector("#contentText").value = item.text || "";
+  document.querySelector("#contentDescription").value = item.description || "";
+  document.querySelector("#contentEmoji").value = item.emoji || "";
+  const color = normalizeContentColor(item.color, type === "planos" ? "#f59e0b" : "#2f73f8");
+  document.querySelector("#contentColor").value = color;
+  const picker = document.querySelector("#contentColorPicker");
+  if (picker) picker.value = color;
+  document.querySelector("#contentPlaylistUrl").value = getPlaylistUrl(item);
+  document.querySelector("#contentTracks").value = item.tracks || "";
+  document.querySelector("#contentDuration").value = item.duration || "";
+  document.querySelector("#contentPlanTag").value = item.tag || "";
+  document.querySelector("#contentVerses").value = formatPlanVersesInput(item);
+  document.querySelector("#contentCancelBtn").style.display = "inline-flex";
+  document.querySelector("#contentAdminMessage").textContent = "";
+  updateContentFormFields();
+  updateVersesCount();
+  // Show playlist preview if editing playlist
+  if (type === "playlists") {
+    const url = getPlaylistUrl(item);
+    if (url) updatePlaylistPreview(url);
+  }
+  panel?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function deleteContentItem(type, id) {
+  const item = getContentItemByType(type, id);
+  if (!item || !canManageContent()) return;
+
+  showConfirm(`Remover "${item.title}"?`, () => {
+    saveItem(contentCollectionForType(type), {
+      ...item,
+      id,
+      deleted: true,
+      updatedAt: Date.now(),
+    });
+    if (document.querySelector("#contentItemId")?.value === id) resetContentForm();
+    renderContent();
+    toast("Conteúdo removido.", "info", 3000);
   });
 }
 
@@ -2231,6 +2764,7 @@ function renderAdminLists() {
   renderApplicationsList();
   renderCellPendingList();
   renderCellWeekPanel();
+  renderJourneyApprovalList();
   if (canManageAll()) renderRoleAdminOptions();
 }
 
@@ -3236,21 +3770,412 @@ const JOURNEY_STEPS = [
 ];
 
 const JOURNEY_KEY = `next_journey:${currentUser?.id}`;
+const JOURNEY_REQUESTS_KEY = 'next_journey_requests';
 
-function getJourneyData() {
-  try { return JSON.parse(localStorage.getItem(JOURNEY_KEY)) || {}; }
-  catch { return {}; }
+function getJourneyData(userId) {
+  const uid = userId || currentUser?.id;
+  let data = {};
+  try { data = JSON.parse(localStorage.getItem(`next_journey:${uid}`)) || {}; }
+  catch { data = {}; }
+
+  const user = uid === currentUser?.id ? currentUser : getUsers().find((item) => item.id === uid);
+  if (user?.journey && typeof user.journey === "object") {
+    data = { ...user.journey, ...data };
+  }
+
+  const approvedRequests = (dbApi?.getAll(JOURNEY_REQUESTS_KEY) || [])
+    .filter((request) => request.userId === uid && request.status === "approved");
+
+  approvedRequests.forEach((request) => {
+    data[request.stepId] = data[request.stepId] || {
+      unlockedAt: request.approvedAt || request.createdAt || Date.now(),
+      approvedBy: request.approvedBy || "Liderança",
+    };
+  });
+
+  return data;
+}
+
+/** Retorna o pedido de um jovem para um determinado passo */
+function getJourneyRequest(userId, stepId) {
+  const all = dbApi?.getAll(JOURNEY_REQUESTS_KEY) || [];
+  return all.find(r => r.userId === userId && r.stepId === stepId) || null;
+}
+
+/** Jovem envia comprovante — cria pedido de aprovação */
+function submitJourneyRequest(stepId, photoDataUrl) {
+  const step = JOURNEY_STEPS.find(s => s.id === stepId);
+  if (!step) return;
+  if (!photoDataUrl) {
+    toast('Anexe uma foto do comprovante antes de enviar.', 'error');
+    return;
+  }
+
+  const existing = getJourneyRequest(currentUser.id, stepId);
+  if (existing) dbApi?.remove(JOURNEY_REQUESTS_KEY, existing.id);
+
+  const req = {
+    id: `jreq_${Date.now()}`,
+    userId:    currentUser.id,
+    userName:  currentUser.name,
+    userRole:  currentUser.role,
+    stepId,
+    stepName:  step.name,
+    photo:     photoDataUrl || null,
+    status:    'pending',
+    createdAt: Date.now(),
+  };
+
+  saveItem(JOURNEY_REQUESTS_KEY, req);
+  renderJourney();
+  toast('Comprovante enviado! Aguarde a aprovação da liderança. 📨', 'success', 4500);
+}
+
+/** Líder aprova um pedido */
+function approveJourneyRequest(requestId) {
+  const all = dbApi?.getAll(JOURNEY_REQUESTS_KEY) || [];
+  const req = all.find(r => r.id === requestId);
+  if (!req) return;
+
+  saveItem(JOURNEY_REQUESTS_KEY, { ...req, status: 'approved', approvedAt: Date.now(), approvedBy: currentUser.name });
+
+  const journeyKey = `next_journey:${req.userId}`;
+  let data = {};
+  try { data = JSON.parse(localStorage.getItem(journeyKey)) || {}; } catch {}
+  data[req.stepId] = { unlockedAt: Date.now(), approvedBy: currentUser.name };
+  localStorage.setItem(journeyKey, JSON.stringify(data));
+
+  const users = dbApi?.getAll('next_users') || [];
+  const youngling = users.find(u => u.id === req.userId);
+
+  if (youngling) {
+    saveItem('next_users', {
+      ...youngling,
+      journey: data,
+      hasServo: youngling.hasServo || hasCompletedRequiredJourney(req.userId),
+      servoType: youngling.servoType || [],
+    });
+  }
+
+  // Se os 3 primeiros passos estão completos → libera aba Servir
+  const requiredForServo = ['descubra', 'avance', 'fundamentos'];
+  const allApproved = requiredForServo.every(id => Boolean(data[id]));
+  if (allApproved) {
+    if (youngling && !youngling.hasServo) {
+      saveItem('next_users', { ...youngling, journey: data, hasServo: true, servoType: youngling.servoType || [] });
+    }
+  }
+
+  setupPermissions();
+  renderJourneyApprovalList();
+  toast(`✅ ${req.userName} — "${req.stepName}" aprovado!`, 'success', 4000);
+}
+
+/** Líder rejeita um pedido */
+function rejectJourneyRequest(requestId) {
+  const all = dbApi?.getAll(JOURNEY_REQUESTS_KEY) || [];
+  const req = all.find(r => r.id === requestId);
+  if (!req) return;
+  saveItem(JOURNEY_REQUESTS_KEY, { ...req, status: 'rejected', rejectedAt: Date.now(), rejectedBy: currentUser.name });
+  renderJourneyApprovalList();
+  toast(`❌ Pedido de ${req.userName} rejeitado.`, 'info', 3500);
+}
+
+/** Abre modal para o jovem enviar o comprovante */
+function openJourneyUploadModal(stepId) {
+  const step = JOURNEY_STEPS.find(s => s.id === stepId);
+  if (!step) return;
+  document.getElementById('journeyUploadModal')?.remove();
+
+  // ── Overlay ──
+  const overlay = document.createElement('div');
+  overlay.id = 'journeyUploadModal';
+  overlay.style.cssText = [
+    'position:fixed','inset:0','z-index:99990',
+    'background:rgba(8,12,24,0.78)','backdrop-filter:blur(6px)',
+    'display:grid','place-items:center','padding:20px',
+    'animation:overlayIn 220ms ease forwards'
+  ].join(';');
+
+  // ── Box ──
+  const box = document.createElement('div');
+  box.style.cssText = [
+    'background:var(--surface)','border-radius:20px','padding:24px 22px',
+    'width:min(420px,100%)','display:grid','gap:14px',
+    'box-shadow:0 40px 100px rgba(0,0,0,0.4)',
+    'animation:modalUp 300ms cubic-bezier(0.16,1,0.3,1) forwards',
+    'max-height:90vh','overflow-y:auto'
+  ].join(';');
+
+  // ── Close btn ──
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.setAttribute('aria-label', 'Fechar');
+  closeBtn.style.cssText = 'position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.1rem;color:var(--muted);cursor:pointer;line-height:1;padding:4px;';
+  box.style.position = 'relative';
+  box.appendChild(closeBtn);
+
+  // ── Icon + title ──
+  const iconEl = document.createElement('div');
+  iconEl.style.cssText = `font-size:2.4rem;text-align:center;color:${step.color};margin-top:8px;`;
+  iconEl.textContent = step.icon;
+
+  const title = document.createElement('h3');
+  title.style.cssText = 'margin:0;font-size:1.15rem;font-weight:800;text-align:center;color:var(--ink);';
+  title.textContent = step.name;
+
+  const desc = document.createElement('p');
+  desc.style.cssText = 'margin:0;font-size:0.85rem;color:var(--muted);text-align:center;line-height:1.5;';
+  desc.textContent = 'Envie uma foto do comprovante de conclusão para a liderança aprovar.';
+
+  // ── File picker ──
+  const fileLabel = document.createElement('label');
+  fileLabel.style.cssText = [
+    'display:flex','flex-direction:column','align-items:center','gap:8px',
+    'padding:20px 16px','border:2px dashed var(--line)','border-radius:12px',
+    'cursor:pointer','background:var(--soft)','transition:border-color 160ms',
+    'text-align:center'
+  ].join(';');
+
+  const fileIcon = document.createElement('span');
+  fileIcon.style.cssText = 'font-size:2rem;';
+  fileIcon.textContent = '📷';
+
+  const fileText = document.createElement('span');
+  fileText.style.cssText = 'font-size:0.82rem;color:var(--muted);font-weight:600;';
+  fileText.textContent = 'Toque para selecionar a foto';
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/*';
+  fileInput.setAttribute('capture', 'environment');
+  fileInput.style.display = 'none';
+
+  fileLabel.appendChild(fileIcon);
+  fileLabel.appendChild(fileText);
+  fileLabel.appendChild(fileInput);
+  fileLabel.addEventListener('click', e => { if (e.target !== fileInput) fileInput.click(); });
+
+  // ── Preview ──
+  const previewWrap = document.createElement('div');
+  previewWrap.style.display = 'none';
+
+  const previewImg = document.createElement('img');
+  previewImg.style.cssText = 'width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:2px solid var(--line);display:block;';
+
+  const removeBtn = document.createElement('button');
+  removeBtn.textContent = 'Remover foto';
+  removeBtn.style.cssText = [
+    'margin-top:8px','width:100%','min-height:38px','border-radius:10px',
+    'border:1.5px solid var(--line)','background:transparent',
+    'color:var(--muted)','font-family:inherit','font-weight:700',
+    'cursor:pointer','font-size:0.82rem'
+  ].join(';');
+
+  previewWrap.appendChild(previewImg);
+  previewWrap.appendChild(removeBtn);
+
+  // ── Submit ──
+  const submitBtn = document.createElement('button');
+  submitBtn.textContent = 'Enviar comprovante';
+  submitBtn.disabled = true;
+  submitBtn.style.cssText = [
+    'min-height:48px','border:0','border-radius:12px',
+    `background:${step.color}`,'color:#fff','font-family:inherit',
+    'font-weight:900','font-size:0.95rem','cursor:pointer',
+    'opacity:0.45','transition:opacity 160ms'
+  ].join(';');
+
+  box.append(iconEl, title, desc, fileLabel, previewWrap, submitBtn);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  // ── Logic ──
+  let photoData = null;
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast('Apenas imagens são aceitas.', 'error'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast('A imagem deve ter menos de 5 MB.', 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => {
+      photoData = ev.target.result;
+      previewImg.src = photoData;
+      previewWrap.style.display = 'block';
+      fileText.textContent = file.name.slice(0, 30);
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = '1';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  removeBtn.addEventListener('click', () => {
+    photoData = null;
+    fileInput.value = '';
+    previewWrap.style.display = 'none';
+    fileText.textContent = 'Toque para selecionar a foto';
+    submitBtn.disabled = true;
+    submitBtn.style.opacity = '0.45';
+  });
+
+  const close = () => {
+    overlay.style.animation = 'toastOut 220ms ease forwards';
+    overlay.addEventListener('animationend', () => overlay.remove(), { once: true });
+  };
+
+  submitBtn.addEventListener('click', () => {
+    if (!photoData) return;
+    submitJourneyRequest(stepId, photoData);
+    close();
+  });
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+}
+
+/** Abre modal de visualização do comprovante (líderes) */
+function openJourneyPhotoModal(req) {
+  document.getElementById('journeyPhotoViewModal')?.remove();
+  const sec = typeof NextSecurity !== 'undefined' ? NextSecurity : { sanitize: s => s };
+
+  const overlay = document.createElement('div');
+  overlay.id = 'journeyPhotoViewModal';
+  overlay.style.cssText = [
+    'position:fixed','inset:0','z-index:99990',
+    'background:rgba(8,12,24,0.78)','backdrop-filter:blur(6px)',
+    'display:grid','place-items:center','padding:20px',
+    'animation:overlayIn 220ms ease forwards'
+  ].join(';');
+
+  const box = document.createElement('div');
+  box.style.cssText = [
+    'background:var(--surface)','border-radius:20px','padding:24px 22px',
+    'width:min(420px,100%)','display:grid','gap:12px','position:relative',
+    'box-shadow:0 40px 100px rgba(0,0,0,0.4)',
+    'animation:modalUp 300ms cubic-bezier(0.16,1,0.3,1) forwards',
+    'max-height:90vh','overflow-y:auto'
+  ].join(';');
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.style.cssText = 'position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.1rem;color:var(--muted);cursor:pointer;';
+  
+  const meta = document.createElement('p');
+  meta.style.cssText = 'margin:0;font-size:0.8rem;color:var(--muted);';
+  meta.innerHTML = `Comprovante de <strong>${sec.sanitize(req.userName)}</strong>`;
+
+  const stepTitle = document.createElement('h3');
+  stepTitle.style.cssText = 'margin:0;font-size:1.05rem;font-weight:800;color:var(--ink);';
+  stepTitle.textContent = sec.sanitize(req.stepName);
+
+  let mediaEl;
+  if (req.photo) {
+    mediaEl = document.createElement('img');
+    mediaEl.src = req.photo;
+    mediaEl.style.cssText = 'width:100%;max-height:340px;object-fit:contain;border-radius:10px;border:1px solid var(--line);display:block;';
+  } else {
+    mediaEl = document.createElement('p');
+    mediaEl.style.cssText = 'color:var(--muted);text-align:center;padding:32px 0;margin:0;';
+    mediaEl.textContent = 'Sem foto anexada';
+  }
+
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:10px;margin-top:4px;';
+
+  const approveBtn = document.createElement('button');
+  approveBtn.textContent = '✓ Aprovar';
+  approveBtn.style.cssText = [
+    'flex:1','min-height:46px','border:0','border-radius:12px',
+    'background:#10b981','color:#fff','font-family:inherit',
+    'font-weight:900','cursor:pointer','font-size:0.92rem'
+  ].join(';');
+
+  const rejectBtn = document.createElement('button');
+  rejectBtn.textContent = '✕ Rejeitar';
+  rejectBtn.style.cssText = [
+    'flex:1','min-height:46px','border-radius:12px',
+    'border:1.5px solid #dc2626','background:transparent',
+    'color:#dc2626','font-family:inherit','font-weight:800',
+    'cursor:pointer','font-size:0.92rem'
+  ].join(';');
+
+  btnRow.append(approveBtn, rejectBtn);
+  box.append(closeBtn, meta, stepTitle, mediaEl, btnRow);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  const close = () => {
+    overlay.style.animation = 'toastOut 220ms ease forwards';
+    overlay.addEventListener('animationend', () => overlay.remove(), { once: true });
+  };
+
+  approveBtn.addEventListener('click', () => { approveJourneyRequest(req.id); close(); });
+  rejectBtn.addEventListener('click', () => {
+    showConfirm(`Rejeitar comprovante de "${sec.sanitize(req.userName)}"?`, () => {
+      rejectJourneyRequest(req.id); close();
+    });
+  });
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+}
+
+/** Renderiza a fila de aprovações de jornada na Gestão */
+function renderJourneyApprovalList() {
+  const container = document.getElementById('journeyApprovalAdminList');
+  if (!container) return;
+  const sec = typeof NextSecurity !== 'undefined' ? NextSecurity : { sanitize: s => s };
+
+  const all = dbApi?.getAll(JOURNEY_REQUESTS_KEY) || [];
+  const pending = all.filter(r => r.status === 'pending').sort((a, b) => b.createdAt - a.createdAt);
+
+  if (!pending.length) {
+    container.innerHTML = `<p class='safety-note'>Nenhum comprovante aguardando aprovação.</p>`;
+    return;
+  }
+
+  container.innerHTML = pending.map(req => {
+    const step = JOURNEY_STEPS.find(s => s.id === req.stepId);
+    const stepColor = step?.color || 'var(--blue)';
+    const date = new Date(req.createdAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return `
+      <article class="admin-list-item" style="gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;">
+          <div>
+            <strong style="font-size:1rem;">${sec.sanitize(req.userName)}</strong>
+            <span style="display:block;font-size:0.8rem;color:${stepColor};font-weight:800;text-transform:uppercase;margin-top:2px;">
+              ${step?.icon || ''} ${sec.sanitize(req.stepName)}
+            </span>
+            <span style="display:block;font-size:0.75rem;color:var(--muted);margin-top:2px;">📅 ${date}</span>
+          </div>
+          <span class="small-badge" style="background:rgba(251,191,36,0.12);color:#b45309;border:1px solid rgba(251,191,36,0.3);">
+            Aguardando
+          </span>
+        </div>
+        <div class="btn-row" style="margin-top:6px;">
+          <button class="primary-button compact btn-view-journey-proof" data-req-id="${req.id}" type="button">
+            👁 Ver comprovante
+          </button>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.btn-view-journey-proof').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const all2 = dbApi?.getAll(JOURNEY_REQUESTS_KEY) || [];
+      const req2 = all2.find(r => r.id === btn.dataset.reqId);
+      if (req2) openJourneyPhotoModal(req2);
+    });
+  });
 }
 
 function saveJourneyStep(stepId) {
+  // Líderes podem aprovar diretamente do perfil do jovem
   const data = getJourneyData();
-  data[stepId] = { unlockedAt: Date.now() };
+  data[stepId] = { unlockedAt: Date.now(), approvedBy: currentUser.name };
   localStorage.setItem(JOURNEY_KEY, JSON.stringify(data));
-
-  // Também persiste na sessão/perfil para o futuro Supabase
   const user = authApi?.currentUser?.();
   if (user) authApi?.updateSession?.({ journey: data });
-
   renderJourney();
   toast(`Conquista desbloqueada: ${JOURNEY_STEPS.find(s => s.id === stepId)?.name}! 🎉`, 'success', 4000);
 }
@@ -3266,26 +4191,54 @@ function renderJourney() {
   if (progressEl) progressEl.textContent = `${unlocked} / ${JOURNEY_STEPS.length}`;
 
   track.innerHTML = JOURNEY_STEPS.map((step, idx) => {
-    const isDone = Boolean(data[step.id]);
+    const isDone     = Boolean(data[step.id]);
+    const myRequest  = getJourneyRequest(currentUser.id, step.id);
+    const isPending  = myRequest && myRequest.status === 'pending';
+    const isRejected = myRequest && myRequest.status === 'rejected';
     const date = isDone
       ? new Date(data[step.id].unlockedAt).toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' })
       : null;
 
-    // Medalha visual: círculo colorido com número quando desbloqueado
     const medalHtml = isDone
       ? `<div class="journey-medal unlocked" style="--journey-color:${step.color};">
            <span class="journey-medal-icon">${step.icon}</span>
            <span class="journey-medal-check">✓</span>
          </div>`
-      : `<div class="journey-medal locked" style="--journey-color:${step.color};">
-           <span class="journey-medal-num">${idx + 1}</span>
+      : `<div class="journey-medal ${isPending ? 'pending' : isRejected ? 'rejected' : ''} locked" style="--journey-color:${step.color};">
+           <span class="journey-medal-num">${isPending ? '⏳' : isRejected ? '✕' : (idx + 1)}</span>
          </div>`;
 
-    // Badge de nível no topo do card
     const levelTag = `<span class="journey-level-tag" style="background:${isDone ? step.color : 'var(--line)'}; color:${isDone ? '#fff' : 'var(--muted)'};">${step.level}</span>`;
 
+    let actionHtml;
+    if (isDone) {
+      actionHtml = `<div class="journey-trophy" style="color:${step.color};">🏆</div>`;
+    } else if (canManage()) {
+      actionHtml = `<button class="journey-unlock-btn" type="button"
+          data-journey-unlock="${step.id}" style="--journey-color:${step.color};">
+          Confirmar
+        </button>`;
+    } else if (isPending) {
+      actionHtml = `<div class="journey-pending-badge">⏳ Aguardando</div>`;
+    } else if (isRejected) {
+      actionHtml = `<button class="journey-unlock-btn" type="button"
+          data-journey-submit="${step.id}"
+          style="--journey-color:#dc2626;border-color:#dc2626;color:#dc2626;">
+          Reenviar
+        </button>`;
+    } else {
+      actionHtml = `<button class="journey-unlock-btn" type="button"
+          data-journey-submit="${step.id}" style="--journey-color:${step.color};">
+          Já conclui
+        </button>`;
+    }
+
+    const rejectedNote = isRejected
+      ? `<span style="display:block;font-size:0.75rem;color:#dc2626;margin-top:4px;font-weight:700;">❌ Comprovante rejeitado — envie novamente</span>`
+      : '';
+
     return `
-      <div class="journey-step ${isDone ? 'unlocked' : ''}"
+      <div class="journey-step ${isDone ? 'unlocked' : ''} ${isPending ? 'step-pending' : ''} ${isRejected ? 'step-rejected' : ''}"
            style="--journey-color:${step.color};">
         ${medalHtml}
         <div class="journey-info">
@@ -3297,28 +4250,20 @@ function renderJourney() {
             ? `<span style="color:${step.color};font-weight:700;">✓ Conquista desbloqueada</span> · ${date}`
             : step.desc}</p>
           ${isDone ? `<span class="journey-badge-label" style="background:color-mix(in srgb,${step.color} 12%,transparent);color:${step.color};">${step.emoji} ${step.badgeLabel}</span>` : ''}
+          ${rejectedNote}
         </div>
-        ${isDone
-          ? `<div class="journey-trophy" style="color:${step.color};">🏆</div>`
-          : canManage()
-            ? `<button class="journey-unlock-btn" type="button"
-                 data-journey-unlock="${step.id}"
-                 style="--journey-color:${step.color};">
-                 Confirmar
-               </button>`
-            : `<div class="journey-badge" style="font-size:0.75rem;">🔒</div>`
-        }
+        ${actionHtml}
       </div>
     `;
   }).join('');
 
-  // Conector de progresso entre passos
   const steps = track.querySelectorAll('.journey-step');
-  steps.forEach((el, i) => {
-    if (i < steps.length - 1) el.style.marginBottom = '0';
+  steps.forEach((el, i) => { if (i < steps.length - 1) el.style.marginBottom = '0'; });
+
+  track.querySelectorAll('[data-journey-submit]').forEach(btn => {
+    btn.addEventListener('click', () => openJourneyUploadModal(btn.dataset.journeySubmit));
   });
 
-  // Handler: líderes confirmam a conquista do jovem
   track.querySelectorAll('[data-journey-unlock]').forEach(btn => {
     btn.addEventListener('click', () => {
       showConfirm(
@@ -3328,7 +4273,6 @@ function renderJourney() {
     });
   });
 }
-
 function renderPerfil() {
   const card = document.getElementById('perfilCard');
   if (!card) return;
@@ -3369,6 +4313,10 @@ function bindEvents() {
       document.querySelectorAll(".content-grid").forEach((grid) => grid.classList.toggle("active", grid.id === tab.dataset.contentTab));
     });
   });
+
+  document.querySelector("#contentType")?.addEventListener("change", updateContentFormFields);
+  document.querySelector("#contentManageForm")?.addEventListener("submit", saveContentItem);
+  document.querySelector("#contentCancelBtn")?.addEventListener("click", () => resetContentForm());
 
   document.querySelector("#groupList")?.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-group-target]");
@@ -3923,37 +4871,47 @@ function bindEvents() {
 }
 
 async function boot() {
+  // Sanitiza chaves do localStorage que possam estar corrompidas
+  const guardedKeys = ['next_posts','next_playlists','next_planos','next_events',
+    'next_products','next_prayers','next_messages','next_group_messages','next_scales'];
+  guardedKeys.forEach(key => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw !== null) JSON.parse(raw); // lança se corrompido
+    } catch {
+      console.warn('[boot] Dado corrompido removido:', key);
+      localStorage.removeItem(key);
+    }
+  });
+
+  try {
+    await dbApi?.syncFromCloud?.();
+  } catch (error) {
+    console.warn("Falha ao sincronizar dados da nuvem:", error);
+  }
+
   setupSessionUi();
   initOfflineDetector();
   maybeShowWelcome();
   setupPermissions();
   bindEvents();
-  
-  renderGroupList();
-  renderGroupChat();
-  renderChecklist();
 
-  renderFeed();
-  renderDailyVerse();
-  renderBirthdays();
-  renderCalendar();
-  renderContentCards("#playlists", playlists);
-  renderContentCards("#planos", planos);
-  renderShop();
-  renderMyPrayers();
-  cleanOldBRPosts();
-  renderBibleRats();
-  renderCultStatus();
-  renderChatContacts();
-  renderYoungChat();
-  renderLeaderInbox();
-  updateUnreadBadge();
-  updatePrayerBadge();
-  renderMyScales();
-  if (typeof renderAgendaFilterOptions === 'function') renderAgendaFilterOptions();
-  if (typeof renderAdminLists === 'function') renderAdminLists();
-  fillProfileForm(getProfileFromStorage());
-  renderPerfil();
+  const renders = [
+    renderGroupList, renderGroupChat, renderChecklist,
+    renderFeed, renderDailyVerse, renderBirthdays,
+    renderCalendar, renderContent, renderShop,
+    renderMyPrayers, cleanOldBRPosts, renderBibleRats,
+    renderCultStatus, renderChatContacts, renderYoungChat,
+    renderLeaderInbox, updateUnreadBadge, updatePrayerBadge,
+    renderMyScales,
+    () => { if (typeof renderAgendaFilterOptions === 'function') renderAgendaFilterOptions(); },
+    () => { if (typeof renderAdminLists === 'function') renderAdminLists(); },
+    () => fillProfileForm(getProfileFromStorage()),
+    renderPerfil,
+  ];
+  for (const fn of renders) {
+    try { fn(); } catch (e) { console.error('[boot render]', fn.name || fn.toString().slice(0,40), e); }
+  }
   setView(views.find((view) => view.classList.contains("active") && canView(view.id))?.id || allowedViews()[0]);
 
   // Realtime Supabase — escuta mudanças em tempo real
@@ -3983,6 +4941,7 @@ async function boot() {
             if (table === 'next_messages' && active.id === 'mensagens') renderLeaderInbox();
             if (table === 'next_group_messages' && active.id === 'grupos') renderGroupChat();
             if (table === 'next_prayers' && active.id === 'gestao') renderPrayerAdminList();
+            if (table === 'next_journey_requests' && active.id === 'gestao') renderJourneyApprovalList();
             if (table === 'next_events' && active.id === 'agenda') renderCalendar();
             if (table === 'next_posts' && active.id === 'home') renderFeed();
             if (table === 'next_scales' && active.id === 'servos') renderMyScales();

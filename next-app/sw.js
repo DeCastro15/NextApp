@@ -1,4 +1,4 @@
-const CACHE = 'next-v' + '20260603b'; // ← atualize essa data a cada deploy
+const CACHE = 'next-v' + '20260610b'; // ← atualize essa data a cada deploy
 const ASSETS = [
   './',
   './index.html',

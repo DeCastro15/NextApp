@@ -867,6 +867,8 @@ select:focus {
 .primary-button:active { transform: scale(0.98); }
 .primary-button.compact { min-height: 44px; }
 
+#contentAddBtn:not(.hidden) { display: inline-flex; align-items: center; gap: 6px; }
+
 .form-message {
   min-height: 20px;
   margin: 0;
@@ -2008,6 +2010,61 @@ body.dark-mode .escala-col { border-color: #000; }
   opacity: 1;
 }
 
+/* Estados: aguardando aprovação */
+.journey-step.step-pending {
+  border-color: #f59e0b;
+  box-shadow: 0 4px 16px rgba(245,158,11,0.15);
+}
+
+.journey-step.step-pending::before {
+  background: linear-gradient(135deg, rgba(245,158,11,0.07), transparent 60%);
+  opacity: 1;
+}
+
+/* Estados: rejeitado */
+.journey-step.step-rejected {
+  border-color: #dc2626;
+  box-shadow: 0 4px 16px rgba(220,38,38,0.12);
+}
+
+.journey-step.step-rejected::before {
+  background: linear-gradient(135deg, rgba(220,38,38,0.06), transparent 60%);
+  opacity: 1;
+}
+
+/* Badge de "aguardando" no card */
+.journey-pending-badge {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #b45309;
+  background: rgba(245,158,11,0.12);
+  border: 1px solid rgba(245,158,11,0.35);
+  border-radius: 8px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  position: relative;
+  z-index: 1;
+}
+
+/* Medalha com estado pendente/rejeitado */
+.journey-medal.pending {
+  border-color: #f59e0b !important;
+  background: rgba(245,158,11,0.12) !important;
+  animation: pendingPulse 1.8s ease-in-out infinite;
+}
+
+.journey-medal.rejected {
+  border-color: #dc2626 !important;
+  background: rgba(220,38,38,0.10) !important;
+  color: #dc2626;
+}
+
+@keyframes pendingPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+  50%       { box-shadow: 0 0 0 6px rgba(245,158,11,0); }
+}
+
 .journey-icon {
   width: 52px;
   height: 52px;
@@ -2099,6 +2156,62 @@ body.dark-mode .escala-col { border-color: #000; }
   color: #fff;
 }
 
+/* ── Modal de upload de comprovante ── */
+.journey-upload-box {
+  max-width: 420px;
+  padding: 24px;
+}
+
+.journey-modal-icon {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.journey-modal-title {
+  margin: 0 0 6px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.journey-modal-desc {
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.journey-file-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  border: 2px dashed var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  background: var(--soft);
+  transition: border-color 160ms, background 160ms;
+  text-align: center;
+}
+
+.journey-file-label:hover {
+  border-color: var(--blue);
+  background: rgba(47,115,248,0.04);
+}
+
+.journey-file-icon {
+  font-size: 2rem;
+}
+
+.journey-file-label span:not(.journey-file-icon) {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
 /* Dark mode */
 body.dark-mode .journey-step {
   background: var(--surface);
@@ -2106,6 +2219,7 @@ body.dark-mode .journey-step {
 }
 
 body.dark-mode .journey-icon { background: #111b2e; }
+body.dark-mode .journey-file-label { background: #111b2e; }
 
 /* ====================================================================
    RESPONSIVE — 360px

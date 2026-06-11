@@ -271,13 +271,147 @@
               <p class="eyebrow">Crescimento</p>
               <h2>Playlists e planos</h2>
             </div>
+            <!-- Botão "+ Adicionar" visível só para liderança -->
+            <button id="contentAddBtn" class="primary-button hidden" type="button"
+              style="min-height:38px;padding:0 16px;font-size:0.82rem;border-radius:10px;">
+              <span style="font-size:1.1rem;line-height:1;">＋</span> Adicionar
+            </button>
           </div>
 
           <div class="tabs" role="tablist" aria-label="Conteúdos">
-            <button class="tab active" type="button" data-content-tab="playlists">Playlists</button>
-            <button class="tab" type="button" data-content-tab="planos">Planos</button>
+            <button class="tab active" type="button" data-content-tab="playlists">🎵 Playlists</button>
+            <button class="tab" type="button" data-content-tab="planos">📖 Planos de Leitura</button>
           </div>
 
+          <!-- ── PAINEL ADMIN (só liderança vê) ── -->
+          <div id="contentAdminPanel" class="hidden">
+            <form class="panel-form" id="contentManageForm" style="border:2px solid var(--blue);border-radius:16px;padding:20px;background:var(--soft);position:relative;">
+
+              <!-- Cabeçalho do formulário -->
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <h3 id="contentFormTitle" style="margin:0;font-size:1rem;font-family:'Syne',sans-serif;font-weight:900;">
+                  ✦ Adicionar conteúdo
+                </h3>
+                <button class="ghost-button" type="button" id="contentCancelBtn"
+                  style="display:none;min-height:32px;padding:0 12px;font-size:0.78rem;">
+                  ✕ Fechar
+                </button>
+              </div>
+
+              <input type="hidden" id="contentItemId" value="" />
+              <input type="hidden" id="contentOriginalType" value="" />
+
+              <!-- Tipo + Título -->
+              <div class="field-grid" style="margin-bottom:12px;">
+                <label style="display:grid;gap:6px;font-size:0.82rem;font-weight:700;color:var(--ink);">
+                  Tipo de conteúdo
+                  <select id="contentType" style="min-height:42px;border-radius:8px;border:1px solid var(--line);padding:0 10px;background:var(--surface);color:var(--ink);font-size:0.9rem;">
+                    <option value="playlists">🎵 Playlist (Spotify / YouTube)</option>
+                    <option value="planos">📖 Plano de Leitura</option>
+                  </select>
+                </label>
+                <label style="display:grid;gap:6px;font-size:0.82rem;font-weight:700;color:var(--ink);">
+                  Título
+                  <input type="text" id="contentTitle" placeholder="Ex.: Louvor Next" required
+                    style="min-height:42px;border-radius:8px;border:1px solid var(--line);padding:0 12px;background:var(--surface);color:var(--ink);" />
+                </label>
+              </div>
+
+              <!-- Chamada -->
+              <label style="display:grid;gap:6px;font-size:0.82rem;font-weight:700;color:var(--ink);margin-bottom:12px;">
+                Chamada curta
+                <input type="text" id="contentText" placeholder="Ex.: Setlist para chegar no culto cantando junto" required
+                  style="min-height:42px;border-radius:8px;border:1px solid var(--line);padding:0 12px;background:var(--surface);color:var(--ink);" />
+              </label>
+
+              <!-- Descrição -->
+              <label style="display:grid;gap:6px;font-size:0.82rem;font-weight:700;color:var(--ink);margin-bottom:12px;">
+                Descrição completa
+                <textarea id="contentDescription" rows="3" required
+                  placeholder="Descreva o conteúdo para os jovens da Next…"
+                  style="border-radius:8px;border:1px solid var(--line);padding:10px 12px;background:var(--surface);color:var(--ink);font-family:inherit;font-size:0.88rem;resize:vertical;"></textarea>
+              </label>
+
+              <!-- Emoji + Cor -->
+              <div class="field-grid" style="margin-bottom:12px;">
+                <label style="display:grid;gap:6px;font-size:0.82rem;font-weight:700;color:var(--ink);">
+                  Emoji
+                  <input type="text" id="contentEmoji" placeholder="🎵" maxlength="4"
+                    style="min-height:42px;border-radius:8px;border:1px solid var(--line);padding:0 12px;background:var(--surface);color:var(--ink);font-size:1.2rem;text-align:center;" />
+                </label>
+                <label style="display:grid;gap:6px;font-size:0.82rem;font-weight:700;color:var(--ink);">
+                  Cor de destaque
+                  <div style="display:flex;gap:8px;align-items:center;">
+                    <input type="color" id="contentColorPicker" value="#2f73f8"
+                      style="width:42px;height:42px;border:none;border-radius:8px;cursor:pointer;padding:2px;" />
+                    <input type="text" id="contentColor" placeholder="#2f73f8" maxlength="7"
+                      style="flex:1;min-height:42px;border-radius:8px;border:1px solid var(--line);padding:0 10px;background:var(--surface);color:var(--ink);font-size:0.85rem;" />
+                  </div>
+                </label>
+              </div>
+
+              <!-- ── Campos de PLAYLIST ── -->
+              <div id="contentPlaylistFields">
+                <div style="background:rgba(47,115,248,0.06);border:1px solid rgba(47,115,248,0.2);border-radius:12px;padding:14px;margin-bottom:12px;">
+                  <p style="margin:0 0 10px;font-size:0.78rem;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#2f73f8;">
+                    🔗 Link da Playlist
+                  </p>
+                  <input type="url" id="contentPlaylistUrl"
+                    placeholder="https://open.spotify.com/playlist/… ou https://youtube.com/playlist?list=…"
+                    style="width:100%;min-height:42px;border-radius:8px;border:1px solid var(--line);padding:0 12px;background:var(--surface);color:var(--ink);font-size:0.85rem;box-sizing:border-box;" />
+                  <!-- Preview do embed -->
+                  <div id="contentPlaylistPreview" style="margin-top:12px;display:none;"></div>
+                  <p id="contentUrlHint" style="margin:8px 0 0;font-size:0.76rem;color:var(--muted);">
+                    Cole um link do Spotify ou YouTube para ver a prévia.
+                  </p>
+                </div>
+                <div class="field-grid" style="margin-bottom:12px;">
+                  <label style="display:grid;gap:6px;font-size:0.82rem;font-weight:700;color:var(--ink);">
+                    Nº de músicas
+                    <input type="number" id="contentTracks" min="0" placeholder="18"
+                      style="min-height:42px;border-radius:8px;border:1px solid var(--line);padding:0 12px;background:var(--surface);color:var(--ink);" />
+                  </label>
+                  <label style="display:grid;gap:6px;font-size:0.82rem;font-weight:700;color:var(--ink);">
+                    Duração total
+                    <input type="text" id="contentDuration" placeholder="1h 12min"
+                      style="min-height:42px;border-radius:8px;border:1px solid var(--line);padding:0 12px;background:var(--surface);color:var(--ink);" />
+                  </label>
+                </div>
+              </div>
+
+              <!-- ── Campos de PLANO ── -->
+              <div id="contentPlanFields" style="display:none;">
+                <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:14px;margin-bottom:12px;">
+                  <p style="margin:0 0 10px;font-size:0.78rem;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;color:#f59e0b;">
+                    📖 Versículos do Plano
+                  </p>
+                  <label style="display:grid;gap:6px;font-size:0.82rem;font-weight:700;color:var(--ink);margin-bottom:10px;">
+                    Tag / Tema do plano
+                    <input type="text" id="contentPlanTag" placeholder="Ex.: Sabedoria, Fé, Identidade…"
+                      style="min-height:42px;border-radius:8px;border:1px solid var(--line);padding:0 12px;background:var(--surface);color:var(--ink);" />
+                  </label>
+                  <label style="display:grid;gap:6px;font-size:0.82rem;font-weight:700;color:var(--ink);">
+                    Versículos <span style="font-weight:400;color:var(--muted);">(um por linha, formato: Referência | Tema)</span>
+                    <textarea id="contentVerses" rows="7"
+                      placeholder="Provérbios 1:1-7 | O início da sabedoria&#10;Provérbios 3:5-6 | Confiar no Senhor&#10;Salmos 119:105 | A Palavra como lâmpada"
+                      style="border-radius:8px;border:1px solid var(--line);padding:10px 12px;background:var(--surface);color:var(--ink);font-family:'DM Sans',monospace;font-size:0.85rem;resize:vertical;line-height:1.6;"></textarea>
+                    <span id="versesCount" style="font-size:0.74rem;color:var(--muted);font-weight:400;">0 versículos adicionados</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Botões -->
+              <div style="display:flex;gap:10px;margin-top:4px;">
+                <button class="primary-button" type="submit" id="contentSubmitBtn"
+                  style="flex:1;min-height:46px;font-size:0.9rem;border-radius:10px;">
+                  💾 Salvar conteúdo
+                </button>
+              </div>
+              <p class="form-message" id="contentAdminMessage" role="status" style="margin-top:10px;"></p>
+            </form>
+          </div>
+
+          <!-- Grades de conteúdo -->
           <div class="content-grid active" id="playlists"></div>
           <div class="content-grid" id="planos"></div>
         </section>
@@ -847,6 +981,12 @@
               <h3>🔥 Jovens Interessados em Células</h3>
               <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">Jovens que clicaram em Participar e aguardam confirmação da liderança.</p>
               <div class="admin-list" id="cellPendingAdminList"></div>
+            </article>
+
+            <article class="panel-form" style="grid-column: 1 / -1;">
+              <h3>🏅 Aprovações de Jornada da Vida</h3>
+              <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">Jovens que enviaram comprovante de conclusão e aguardam aprovação da liderança.</p>
+              <div class="admin-list" id="journeyApprovalAdminList"></div>
             </article>
 
             <article class="panel-form" style="grid-column: 1 / -1;">

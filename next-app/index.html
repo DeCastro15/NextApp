@@ -884,29 +884,63 @@
       // ── Login ────────────────────────────────────────────────────────────────
       loginForm.addEventListener('submit', async e => {
         e.preventDefault();
-        document.querySelector('#message').textContent = 'Carregando...';
-        const user = await NextAuth.login(
-          document.querySelector('#email').value.trim(),
-          document.querySelector('#password').value
-        );
-        if (!user) {
-          document.querySelector('#message').textContent = 'E-mail ou senha inválidos.';
+        const msgEl = document.querySelector('#message');
+
+        // Verifica lockout antes de tentar
+        if (typeof NextSecurity !== 'undefined' && NextSecurity.isLockedOut()) {
+          const secs = NextSecurity.lockoutSecondsLeft();
+          const mins = Math.ceil(secs / 60);
+          msgEl.textContent = `🔒 Muitas tentativas. Aguarde ${mins} minuto(s).`;
+          msgEl.style.color = '#dc2626';
           return;
         }
+
+        msgEl.textContent = 'Carregando...';
+        msgEl.style.color = '';
+
+        let user;
+        try {
+          user = await NextAuth.login(
+            document.querySelector('#email').value.trim(),
+            document.querySelector('#password').value
+          );
+        } catch (err) {
+          msgEl.textContent = err.message || 'Erro ao entrar. Tente novamente.';
+          msgEl.style.color = '#dc2626';
+          return;
+        }
+
+        if (!user) {
+          msgEl.textContent = 'E-mail ou senha inválidos.';
+          msgEl.style.color = '#dc2626';
+          return;
+        }
+        msgEl.style.color = '';
         checkCellPopup(user);
       });
 
       // ── Register step 1 ──────────────────────────────────────────────────────
       registerForm.addEventListener('submit', async e => {
         e.preventDefault();
-        document.querySelector('#regMessage').textContent = 'Criando conta...';
+        const regMsg = document.querySelector('#regMessage');
+        regMsg.textContent = 'Criando conta...';
+        regMsg.style.color = '';
         const name     = document.querySelector('#regName').value.trim();
         const email    = document.querySelector('#regEmail').value.trim();
         const password = document.querySelector('#regPassword').value;
 
-        const user = await NextAuth.register(name, email, password);
+        let user;
+        try {
+          user = await NextAuth.register(name, email, password);
+        } catch (err) {
+          regMsg.textContent = err.message || 'Erro ao criar conta.';
+          regMsg.style.color = '#dc2626';
+          return;
+        }
+
         if (!user) {
-          document.querySelector('#regMessage').textContent = 'Erro ao criar conta. Tente outro e-mail.';
+          regMsg.textContent = 'Erro ao criar conta. Tente outro e-mail.';
+          regMsg.style.color = '#dc2626';
           return;
         }
         pendingUser = user;
