@@ -3891,22 +3891,33 @@ function openJourneyUploadModal(stepId) {
   // ── Overlay ──
   const overlay = document.createElement('div');
   overlay.id = 'journeyUploadModal';
-  overlay.style.cssText = [
-    'position:fixed','inset:0','z-index:99990',
-    'background:rgba(8,12,24,0.78)','backdrop-filter:blur(6px)',
-    'display:grid','place-items:center','padding:20px',
-    'animation:overlayIn 220ms ease forwards'
-  ].join(';');
+  // Inline style individual para garantir que nenhum ancestral quebre o fixed
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.right = '0';
+  overlay.style.bottom = '0';
+  overlay.style.zIndex = '999999';
+  overlay.style.background = 'rgba(8,12,24,0.82)';
+  overlay.style.backdropFilter = 'blur(6px)';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  overlay.style.padding = '20px';
+  overlay.style.boxSizing = 'border-box';
 
   // ── Box ──
   const box = document.createElement('div');
-  box.style.cssText = [
-    'background:var(--surface)','border-radius:20px','padding:24px 22px',
-    'width:min(420px,100%)','display:grid','gap:14px','position:relative',
-    'box-shadow:0 40px 100px rgba(0,0,0,0.4)',
-    'animation:modalUp 300ms cubic-bezier(0.16,1,0.3,1) forwards',
-    'max-height:90vh','overflow-y:auto'
-  ].join(';');
+  box.style.position = 'relative';
+  box.style.background = 'var(--surface, #fff)';
+  box.style.borderRadius = '20px';
+  box.style.padding = '24px 22px';
+  box.style.width = 'min(400px, 100%)';
+  box.style.display = 'grid';
+  box.style.gap = '12px';
+  box.style.boxShadow = '0 40px 100px rgba(0,0,0,0.4)';
+  box.style.boxSizing = 'border-box';
 
   // ── Close btn ──
   const closeBtn = document.createElement('button');
@@ -4009,7 +4020,8 @@ function openJourneyUploadModal(stepId) {
 
   box.append(iconEl, title, desc, choiceRow, previewWrap, submitBtn);
   overlay.appendChild(box);
-  document.body.appendChild(overlay);
+  // Append ao <html> para escapar qualquer transform/stacking context do layout
+  document.documentElement.appendChild(overlay);
 
   // ── Lógica de leitura de arquivo ──
   let photoData = null;
@@ -4063,8 +4075,9 @@ function openJourneyUploadModal(stepId) {
   });
 
   const close = () => {
-    overlay.style.animation = 'toastOut 220ms ease forwards';
-    overlay.addEventListener('animationend', () => overlay.remove(), { once: true });
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 200ms ease';
+    setTimeout(() => overlay.remove(), 210);
   };
 
   submitBtn.addEventListener('click', () => {
@@ -4083,21 +4096,33 @@ function openJourneyPhotoModal(req) {
 
   const overlay = document.createElement('div');
   overlay.id = 'journeyPhotoViewModal';
-  overlay.style.cssText = [
-    'position:fixed','inset:0','z-index:99990',
-    'background:rgba(8,12,24,0.78)','backdrop-filter:blur(6px)',
-    'display:grid','place-items:center','padding:20px',
-    'animation:overlayIn 220ms ease forwards'
-  ].join(';');
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.right = '0';
+  overlay.style.bottom = '0';
+  overlay.style.zIndex = '999999';
+  overlay.style.background = 'rgba(8,12,24,0.82)';
+  overlay.style.backdropFilter = 'blur(6px)';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  overlay.style.padding = '20px';
+  overlay.style.boxSizing = 'border-box';
 
   const box = document.createElement('div');
-  box.style.cssText = [
-    'background:var(--surface)','border-radius:20px','padding:24px 22px',
-    'width:min(420px,100%)','display:grid','gap:12px','position:relative',
-    'box-shadow:0 40px 100px rgba(0,0,0,0.4)',
-    'animation:modalUp 300ms cubic-bezier(0.16,1,0.3,1) forwards',
-    'max-height:90vh','overflow-y:auto'
-  ].join(';');
+  box.style.position = 'relative';
+  box.style.background = 'var(--surface, #fff)';
+  box.style.borderRadius = '20px';
+  box.style.padding = '24px 22px';
+  box.style.width = 'min(420px, 100%)';
+  box.style.display = 'grid';
+  box.style.gap = '12px';
+  box.style.boxShadow = '0 40px 100px rgba(0,0,0,0.4)';
+  box.style.maxHeight = '90vh';
+  box.style.overflowY = 'auto';
+  box.style.boxSizing = 'border-box';
 
   const closeBtn = document.createElement('button');
   closeBtn.textContent = '✕';
@@ -4145,11 +4170,12 @@ function openJourneyPhotoModal(req) {
   btnRow.append(approveBtn, rejectBtn);
   box.append(closeBtn, meta, stepTitle, mediaEl, btnRow);
   overlay.appendChild(box);
-  document.body.appendChild(overlay);
+  document.documentElement.appendChild(overlay);
 
   const close = () => {
-    overlay.style.animation = 'toastOut 220ms ease forwards';
-    overlay.addEventListener('animationend', () => overlay.remove(), { once: true });
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 200ms ease';
+    setTimeout(() => overlay.remove(), 210);
   };
 
   approveBtn.addEventListener('click', () => { approveJourneyRequest(req.id); close(); });
