@@ -3760,12 +3760,13 @@ const JOURNEY_STEPS = [
   {
     id: 'ide',
     name: 'Escola de Líderes',
-    level: 'Nível 4',
-    desc: 'Preparada para formar líderes de célula e formadores de discípulos.',
+    level: 'Opcional',
+    desc: 'Preparada para formar líderes de célula e formadores de discípulos. Este passo é opcional.',
     icon: '🐟',
     emoji: '🔴',
     color: '#dc2626',
     badgeLabel: 'Liderança',
+    optional: true,
   },
 ];
 
@@ -3881,7 +3882,7 @@ function rejectJourneyRequest(requestId) {
   toast(`❌ Pedido de ${req.userName} rejeitado.`, 'info', 3500);
 }
 
-/** Abre modal para o jovem enviar o comprovante */
+/** Abre modal para o jovem enviar o comprovante — escolha entre Galeria ou Câmera */
 function openJourneyUploadModal(stepId) {
   const step = JOURNEY_STEPS.find(s => s.id === stepId);
   if (!step) return;
@@ -3901,7 +3902,7 @@ function openJourneyUploadModal(stepId) {
   const box = document.createElement('div');
   box.style.cssText = [
     'background:var(--surface)','border-radius:20px','padding:24px 22px',
-    'width:min(420px,100%)','display:grid','gap:14px',
+    'width:min(420px,100%)','display:grid','gap:14px','position:relative',
     'box-shadow:0 40px 100px rgba(0,0,0,0.4)',
     'animation:modalUp 300ms cubic-bezier(0.16,1,0.3,1) forwards',
     'max-height:90vh','overflow-y:auto'
@@ -3912,7 +3913,6 @@ function openJourneyUploadModal(stepId) {
   closeBtn.textContent = '✕';
   closeBtn.setAttribute('aria-label', 'Fechar');
   closeBtn.style.cssText = 'position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.1rem;color:var(--muted);cursor:pointer;line-height:1;padding:4px;';
-  box.style.position = 'relative';
   box.appendChild(closeBtn);
 
   // ── Icon + title ──
@@ -3926,35 +3926,52 @@ function openJourneyUploadModal(stepId) {
 
   const desc = document.createElement('p');
   desc.style.cssText = 'margin:0;font-size:0.85rem;color:var(--muted);text-align:center;line-height:1.5;';
-  desc.textContent = 'Envie uma foto do comprovante de conclusão para a liderança aprovar.';
+  desc.textContent = 'Selecione como quer enviar o comprovante de conclusão:';
 
-  // ── File picker ──
-  const fileLabel = document.createElement('label');
-  fileLabel.style.cssText = [
-    'display:flex','flex-direction:column','align-items:center','gap:8px',
-    'padding:20px 16px','border:2px dashed var(--line)','border-radius:12px',
-    'cursor:pointer','background:var(--soft)','transition:border-color 160ms',
-    'text-align:center'
+  // ── Inputs ocultos ──
+  const galleryInput = document.createElement('input');
+  galleryInput.type = 'file';
+  galleryInput.accept = 'image/*';
+  galleryInput.style.display = 'none';
+
+  const cameraInput = document.createElement('input');
+  cameraInput.type = 'file';
+  cameraInput.accept = 'image/*';
+  cameraInput.setAttribute('capture', 'environment');
+  cameraInput.style.display = 'none';
+
+  // ── Botões de escolha ──
+  const choiceRow = document.createElement('div');
+  choiceRow.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:10px;';
+
+  const btnGallery = document.createElement('button');
+  btnGallery.type = 'button';
+  btnGallery.style.cssText = [
+    'display:flex','flex-direction:column','align-items:center','gap:6px',
+    'padding:18px 10px','border:2px dashed var(--line)','border-radius:14px',
+    'cursor:pointer','background:var(--soft)','transition:border-color 160ms,background 160ms',
+    'font-family:inherit','color:var(--ink)','font-size:0.82rem','font-weight:700'
   ].join(';');
+  btnGallery.innerHTML = '<span style="font-size:1.8rem;">🖼️</span>Galeria';
+  btnGallery.addEventListener('mouseenter', () => { btnGallery.style.borderColor = step.color; btnGallery.style.background = `color-mix(in srgb,${step.color} 8%,var(--soft))`; });
+  btnGallery.addEventListener('mouseleave', () => { btnGallery.style.borderColor = 'var(--line)'; btnGallery.style.background = 'var(--soft)'; });
 
-  const fileIcon = document.createElement('span');
-  fileIcon.style.cssText = 'font-size:2rem;';
-  fileIcon.textContent = '📷';
+  const btnCamera = document.createElement('button');
+  btnCamera.type = 'button';
+  btnCamera.style.cssText = [
+    'display:flex','flex-direction:column','align-items:center','gap:6px',
+    'padding:18px 10px','border:2px dashed var(--line)','border-radius:14px',
+    'cursor:pointer','background:var(--soft)','transition:border-color 160ms,background 160ms',
+    'font-family:inherit','color:var(--ink)','font-size:0.82rem','font-weight:700'
+  ].join(';');
+  btnCamera.innerHTML = '<span style="font-size:1.8rem;">📷</span>Câmera';
+  btnCamera.addEventListener('mouseenter', () => { btnCamera.style.borderColor = step.color; btnCamera.style.background = `color-mix(in srgb,${step.color} 8%,var(--soft))`; });
+  btnCamera.addEventListener('mouseleave', () => { btnCamera.style.borderColor = 'var(--line)'; btnCamera.style.background = 'var(--soft)'; });
 
-  const fileText = document.createElement('span');
-  fileText.style.cssText = 'font-size:0.82rem;color:var(--muted);font-weight:600;';
-  fileText.textContent = 'Toque para selecionar a foto';
+  btnGallery.addEventListener('click', () => galleryInput.click());
+  btnCamera.addEventListener('click', () => cameraInput.click());
 
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = 'image/*';
-  fileInput.setAttribute('capture', 'environment');
-  fileInput.style.display = 'none';
-
-  fileLabel.appendChild(fileIcon);
-  fileLabel.appendChild(fileText);
-  fileLabel.appendChild(fileInput);
-  fileLabel.addEventListener('click', e => { if (e.target !== fileInput) fileInput.click(); });
+  choiceRow.append(btnGallery, btnCamera, galleryInput, cameraInput);
 
   // ── Preview ──
   const previewWrap = document.createElement('div');
@@ -3963,8 +3980,12 @@ function openJourneyUploadModal(stepId) {
   const previewImg = document.createElement('img');
   previewImg.style.cssText = 'width:100%;max-height:220px;object-fit:cover;border-radius:10px;border:2px solid var(--line);display:block;';
 
+  const fileNameLabel = document.createElement('p');
+  fileNameLabel.style.cssText = 'margin:6px 0 0;font-size:0.78rem;color:var(--muted);font-weight:600;text-align:center;';
+
   const removeBtn = document.createElement('button');
   removeBtn.textContent = 'Remover foto';
+  removeBtn.type = 'button';
   removeBtn.style.cssText = [
     'margin-top:8px','width:100%','min-height:38px','border-radius:10px',
     'border:1.5px solid var(--line)','background:transparent',
@@ -3972,51 +3993,73 @@ function openJourneyUploadModal(stepId) {
     'cursor:pointer','font-size:0.82rem'
   ].join(';');
 
-  previewWrap.appendChild(previewImg);
-  previewWrap.appendChild(removeBtn);
+  previewWrap.append(previewImg, fileNameLabel, removeBtn);
 
   // ── Submit ──
   const submitBtn = document.createElement('button');
-  submitBtn.textContent = 'Enviar comprovante';
+  submitBtn.textContent = 'Enviar para a liderança 📨';
+  submitBtn.type = 'button';
   submitBtn.disabled = true;
   submitBtn.style.cssText = [
-    'min-height:48px','border:0','border-radius:12px',
+    'min-height:50px','border:0','border-radius:12px',
     `background:${step.color}`,'color:#fff','font-family:inherit',
     'font-weight:900','font-size:0.95rem','cursor:pointer',
-    'opacity:0.45','transition:opacity 160ms'
+    'opacity:0.4','transition:opacity 160ms'
   ].join(';');
 
-  box.append(iconEl, title, desc, fileLabel, previewWrap, submitBtn);
+  box.append(iconEl, title, desc, choiceRow, previewWrap, submitBtn);
   overlay.appendChild(box);
   document.body.appendChild(overlay);
 
-  // ── Logic ──
+  // ── Lógica de leitura de arquivo ──
   let photoData = null;
 
-  fileInput.addEventListener('change', () => {
-    const file = fileInput.files[0];
+  function handleFileChange(input) {
+    const file = input.files[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) { toast('Apenas imagens são aceitas.', 'error'); return; }
-    if (file.size > 5 * 1024 * 1024) { toast('A imagem deve ter menos de 5 MB.', 'error'); return; }
+    if (file.size > 8 * 1024 * 1024) { toast('A imagem deve ter menos de 8 MB.', 'error'); return; }
+
+    // Comprime para max 900px antes de salvar em base64
     const reader = new FileReader();
     reader.onload = ev => {
-      photoData = ev.target.result;
-      previewImg.src = photoData;
-      previewWrap.style.display = 'block';
-      fileText.textContent = file.name.slice(0, 30);
-      submitBtn.disabled = false;
-      submitBtn.style.opacity = '1';
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 900;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        photoData = canvas.toDataURL('image/jpeg', 0.82);
+        previewImg.src = photoData;
+        fileNameLabel.textContent = file.name.slice(0, 40);
+        previewWrap.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        // Destaca o botão escolhido
+        [btnGallery, btnCamera].forEach(b => { b.style.borderColor = 'var(--line)'; b.style.background = 'var(--soft)'; });
+        const chosen = input === galleryInput ? btnGallery : btnCamera;
+        chosen.style.borderColor = step.color;
+        chosen.style.background = `color-mix(in srgb,${step.color} 10%,var(--soft))`;
+      };
+      img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
-  });
+  }
+
+  galleryInput.addEventListener('change', () => handleFileChange(galleryInput));
+  cameraInput.addEventListener('change',  () => handleFileChange(cameraInput));
 
   removeBtn.addEventListener('click', () => {
     photoData = null;
-    fileInput.value = '';
+    galleryInput.value = '';
+    cameraInput.value  = '';
     previewWrap.style.display = 'none';
-    fileText.textContent = 'Toque para selecionar a foto';
+    fileNameLabel.textContent = '';
     submitBtn.disabled = true;
-    submitBtn.style.opacity = '0.45';
+    submitBtn.style.opacity = '0.4';
+    [btnGallery, btnCamera].forEach(b => { b.style.borderColor = 'var(--line)'; b.style.background = 'var(--soft)'; });
   });
 
   const close = () => {
@@ -4187,8 +4230,13 @@ function renderJourney() {
 
   const data = getJourneyData();
   const unlocked = Object.keys(data).length;
+  const servirUnlocked = ['descubra','avance','fundamentos'].every(id => Boolean(data[id]));
 
   if (progressEl) progressEl.textContent = `${unlocked} / ${JOURNEY_STEPS.length}`;
+
+  // Mostra/esconde banner de desbloqueio da aba Servir
+  const bannerEl = document.getElementById('journeyServingBanner');
+  if (bannerEl) bannerEl.style.display = servirUnlocked ? 'flex' : 'none';
 
   track.innerHTML = JOURNEY_STEPS.map((step, idx) => {
     const isDone     = Boolean(data[step.id]);
@@ -4208,7 +4256,11 @@ function renderJourney() {
            <span class="journey-medal-num">${isPending ? '⏳' : isRejected ? '✕' : (idx + 1)}</span>
          </div>`;
 
-    const levelTag = `<span class="journey-level-tag" style="background:${isDone ? step.color : 'var(--line)'}; color:${isDone ? '#fff' : 'var(--muted)'};">${step.level}</span>`;
+    const levelTag = `<span class="journey-level-tag" style="background:${isDone ? step.color : step.optional ? 'rgba(220,38,38,0.1)' : 'var(--line)'}; color:${isDone ? '#fff' : step.optional ? '#dc2626' : 'var(--muted)'};">${step.level}</span>`;
+
+    const optionalNote = step.optional && !isDone
+      ? `<span style="display:block;font-size:0.75rem;color:var(--muted);margin-top:4px;font-style:italic;">Este passo é opcional — a aba Servir não depende dele.</span>`
+      : '';
 
     let actionHtml;
     if (isDone) {
@@ -4245,10 +4297,12 @@ function renderJourney() {
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px;">
             <strong>${step.name}</strong>
             ${levelTag}
+            ${step.id === 'ide' ? `<span style="font-size:0.70rem;font-weight:800;background:rgba(107,114,128,0.12);color:var(--muted);border:1px solid var(--line);border-radius:20px;padding:2px 8px;">Opcional</span>` : ''}
           </div>
           <p>${isDone
             ? `<span style="color:${step.color};font-weight:700;">✓ Conquista desbloqueada</span> · ${date}`
             : step.desc}</p>
+          ${step.id === 'ide' && !isDone ? `<span style="display:block;font-size:0.75rem;color:var(--muted);margin-top:2px;">⭐ Complementar — não obrigatório para servir</span>` : ''}
           ${isDone ? `<span class="journey-badge-label" style="background:color-mix(in srgb,${step.color} 12%,transparent);color:${step.color};">${step.emoji} ${step.badgeLabel}</span>` : ''}
           ${rejectedNote}
         </div>
@@ -4259,6 +4313,29 @@ function renderJourney() {
 
   const steps = track.querySelectorAll('.journey-step');
   steps.forEach((el, i) => { if (i < steps.length - 1) el.style.marginBottom = '0'; });
+
+  // Banner de desbloqueio da aba Servir
+  let servirBanner = document.getElementById('journeyServirBanner');
+  if (!servirBanner) {
+    servirBanner = document.createElement('div');
+    servirBanner.id = 'journeyServirBanner';
+    track.insertAdjacentElement('afterend', servirBanner);
+  }
+  if (servirUnlocked && currentUser.role === 'jovem') {
+    servirBanner.innerHTML = `
+      <div style="margin-top:16px;padding:14px 16px;border-radius:12px;
+          background:linear-gradient(135deg,rgba(16,185,129,0.12),transparent);
+          border:1.5px solid rgba(16,185,129,0.35);display:flex;align-items:center;gap:12px;">
+        <span style="font-size:1.6rem;">🎉</span>
+        <div>
+          <p style="margin:0;font-size:0.88rem;font-weight:800;color:#065f46;">Aba <strong>Quero Servir</strong> desbloqueada!</p>
+          <p style="margin:2px 0 0;font-size:0.78rem;color:#047857;">Você completou os 3 passos obrigatórios. Explore a aba no menu!</p>
+        </div>
+      </div>
+    `;
+  } else {
+    servirBanner.innerHTML = '';
+  }
 
   track.querySelectorAll('[data-journey-submit]').forEach(btn => {
     btn.addEventListener('click', () => openJourneyUploadModal(btn.dataset.journeySubmit));
@@ -4917,7 +4994,7 @@ async function boot() {
   // Realtime Supabase — escuta mudanças em tempo real
     if (supabaseClient) {
       const realtimeTables = ['next_messages', 'next_group_messages', 'next_prayers',
-                              'next_events', 'next_posts', 'next_scales'];
+                              'next_events', 'next_posts', 'next_scales', 'next_journey_requests'];
 
       realtimeTables.forEach(table => {
         supabaseClient
