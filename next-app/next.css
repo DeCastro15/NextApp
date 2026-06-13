@@ -788,6 +788,17 @@ body.dark-mode .accent-dark {
   align-items: start;
 }
 
+/* Pedidos de oração pendentes ficam abaixo da caixa de pedido, alinhados com ela */
+#myPrayersList {
+  grid-column: 2;
+}
+
+@media (max-width: 980px) {
+  #myPrayersList {
+    grid-column: 1;
+  }
+}
+
 .form-intro {
   position: sticky;
   top: 24px;
