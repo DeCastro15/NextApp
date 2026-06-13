@@ -22,6 +22,54 @@ function toast(msg, type = 'info', duration = 3200) {
 }
 
 
+// ── Modal de escolha (várias opções, sem "Cancelar/Confirmar" fixos) ──
+function showChoiceModal(message, choices) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = [
+    'position:fixed','inset:0','z-index:99990',
+    'background:rgba(8,12,24,0.72)','backdrop-filter:blur(4px)',
+    'display:grid','place-items:center','padding:20px',
+    'animation:overlayIn 220ms ease forwards'
+  ].join(';');
+
+  const box = document.createElement('div');
+  box.style.cssText = [
+    'background:var(--surface)','border-radius:16px','padding:24px 22px',
+    'width:min(380px,100%)','display:grid','gap:16px',
+    'box-shadow:0 40px 100px rgba(0,0,0,0.35)',
+    'animation:modalUp 300ms cubic-bezier(0.16,1,0.3,1) forwards'
+  ].join(';');
+
+  const msg = document.createElement('p');
+  msg.style.cssText = 'margin:0;font-size:0.96rem;font-weight:600;color:var(--ink);line-height:1.5;';
+  msg.textContent = message;
+
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+
+  const close = () => {
+    overlay.style.animation = 'toastOut 220ms ease forwards';
+    overlay.addEventListener('animationend', () => overlay.remove(), { once: true });
+  };
+
+  choices.forEach((choice) => {
+    const btn = document.createElement('button');
+    btn.textContent = choice.label;
+    btn.type = 'button';
+    btn.style.cssText = choice.primary
+      ? 'min-height:44px;padding:0 18px;border-radius:10px;border:0;background:var(--blue);color:#fff;font-family:inherit;font-weight:800;cursor:pointer;font-size:0.9rem;'
+      : 'min-height:44px;padding:0 18px;border-radius:10px;border:1.5px solid var(--line);background:transparent;color:var(--ink);font-family:inherit;font-weight:700;cursor:pointer;font-size:0.9rem;';
+    btn.addEventListener('click', () => { close(); choice.onClick?.(); });
+    row.appendChild(btn);
+  });
+
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+  box.append(msg, row);
+  overlay.append(box);
+  document.body.appendChild(overlay);
+}
+
 // ── Modal de confirmação (substitui window.confirm) ──
 function showConfirm(message, onConfirm, onCancel) {
   const overlay = document.createElement('div');
@@ -2609,12 +2657,12 @@ function giveServoRole(event) {
 }
 
 function renderPrayerAdminList() {
-  const prayers = getPrayers().slice(0, 20);
+  const prayers = getPrayers().filter(p => !p.reply).slice(0, 20);
   const list = document.querySelector("#prayerAdminList");
   if (!list) return;
 
   if (!prayers.length) {
-    list.innerHTML = `<p class="safety-note">Nenhum pedido de oração recebido ainda.</p>`;
+    list.innerHTML = `<p class="safety-note">Nenhum pedido de oração pendente. 🙏</p>`;
     return;
   }
 
@@ -2896,6 +2944,61 @@ function savePrayer(event) {
   renderPrayerAdminList();
 }
 
+// ── Continuar conversa após resposta da liderança ──
+const PRAYER_PROMPT_DISMISSED_KEY = `next_prayer_prompt_dismissed:${currentUser?.id}`;
+
+function getDismissedPrayerPrompts() {
+  try {
+    return JSON.parse(localStorage.getItem(PRAYER_PROMPT_DISMISSED_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function dismissPrayerPrompt(prayerId) {
+  const list = getDismissedPrayerPrompts();
+  if (!list.includes(prayerId)) {
+    list.push(prayerId);
+    localStorage.setItem(PRAYER_PROMPT_DISMISSED_KEY, JSON.stringify(list));
+  }
+}
+
+function openLeaderChatFor(prayer, anonymous) {
+  const leaderName = leaderNames.find(n =>
+    (prayer.repliedBy || "").toLowerCase().includes(n.toLowerCase())
+  ) || prayer.repliedBy || leaderNames[0];
+
+  chatTargetName = leaderName;
+  chatTargetId = currentUser.id;
+
+  setView("conversa");
+  renderChatContacts();
+  renderYoungChat();
+
+  const anonCheckbox = document.querySelector("#anonymousChat");
+  if (anonCheckbox) anonCheckbox.checked = !!anonymous;
+}
+
+function continuePrayerChat(prayerId) {
+  const prayer = getPrayers().find(p => p.id === prayerId);
+  if (!prayer) return;
+  dismissPrayerPrompt(prayerId);
+
+  if (prayer.anonymous) {
+    showChoiceModal("Quer continuar a conversa como anônimo?", [
+      { label: "Sim, continuar anônimo", onClick: () => openLeaderChatFor(prayer, true) },
+      { label: "Não, mostrar meu nome", primary: true, onClick: () => openLeaderChatFor(prayer, false) },
+    ]);
+  } else {
+    openLeaderChatFor(prayer, false);
+  }
+}
+
+function dismissPrayerChatPrompt(prayerId) {
+  dismissPrayerPrompt(prayerId);
+  renderMyPrayers();
+}
+
 function renderMyPrayers() {
   const container = document.querySelector("#myPrayersList");
   if (!container) return;
@@ -2910,7 +3013,11 @@ function renderMyPrayers() {
     return;
   }
 
+  const dismissed = getDismissedPrayerPrompts();
+
   container.innerHTML = myPrayers.map(prayer => {
+    const showContinuePrompt = Boolean(prayer.reply) && !dismissed.includes(prayer.id);
+
     const replyHtml = prayer.reply ? `
       <div style="background: rgba(47,115,248,0.07); border-left: 3px solid var(--blue); padding: 8px 12px; border-radius: 0 6px 6px 0; margin-top: 8px;">
         <span class="eyebrow" style="color: var(--blue); font-size: 0.7rem;">Resposta da liderança</span>
@@ -2919,14 +3026,36 @@ function renderMyPrayers() {
       </div>
     ` : (prayer.wantsReply ? `<p style="font-size: 0.82rem; color: var(--muted); margin-top: 6px; font-style: italic;">Aguardando resposta da liderança...</p>` : "");
 
+    const continuePromptHtml = showContinuePrompt ? `
+      <div class="prayer-continue-row">
+        <span style="font-size: 0.82rem; color: var(--muted); font-weight: 700;">Precisa falar mais sobre isso?</span>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button class="ghost-button" type="button" data-prayer-dismiss="${prayer.id}" style="padding: 4px 12px; min-height: 32px; font-size: 0.78rem;">Não, obrigado</button>
+          <button class="primary-button compact" type="button" data-prayer-continue="${prayer.id}" style="padding: 4px 12px; min-height: 32px; font-size: 0.78rem;">Continuar conversa</button>
+        </div>
+      </div>
+    ` : "";
+
     return `
       <article style="border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--surface);">
         <p style="margin: 0 0 6px; font-size: 0.9rem;">${prayer.text}</p>
         <span class="small-badge" style="font-size: 0.72rem;">${prayer.anonymous ? "Anônimo" : "Identificado"}</span>
         ${replyHtml}
+        ${continuePromptHtml}
       </article>
     `;
   }).join("");
+
+  if (!container._bound) {
+    container._bound = true;
+    container.addEventListener("click", (event) => {
+      const continueBtn = event.target.closest("[data-prayer-continue]");
+      if (continueBtn) { continuePrayerChat(continueBtn.dataset.prayerContinue); return; }
+
+      const dismissBtn = event.target.closest("[data-prayer-dismiss]");
+      if (dismissBtn) { dismissPrayerChatPrompt(dismissBtn.dataset.prayerDismiss); return; }
+    });
+  }
 }
 
 function populateScaleEvents() {
@@ -5044,6 +5173,8 @@ async function boot() {
             if (table === 'next_messages' && active.id === 'mensagens') renderLeaderInbox();
             if (table === 'next_group_messages' && active.id === 'grupos') renderGroupChat();
             if (table === 'next_prayers' && active.id === 'gestao') renderPrayerAdminList();
+            if (table === 'next_prayers' && active.id === 'oracao') renderMyPrayers();
+            if (table === 'next_prayers') updatePrayerBadge();
             if (table === 'next_journey_requests' && active.id === 'gestao') renderJourneyApprovalList();
             if (table === 'next_events' && active.id === 'agenda') renderCalendar();
             if (table === 'next_posts' && active.id === 'home') renderFeed();
@@ -5060,7 +5191,8 @@ async function boot() {
         if (active.id === 'mensagens') renderLeaderInbox();
         updateUnreadBadge();
         updatePrayerBadge();
-        if (active.id === 'grupos') renderGroupChat();
+        if (active.id === 'oracao') renderMyPrayers();
+        if (active.id === 'gestao') renderPrayerAdminList();
         if (active.id === 'home') { renderFeed(); renderCultStatus(); renderDailyVerse(); renderBirthdays(); }
         if (active.id === 'agenda') renderCalendar();
       }, 15000);
