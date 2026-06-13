@@ -1875,10 +1875,10 @@ function renderShop() {
               <p style="margin: 4px 0 8px; font-size: 0.88rem;">${product.text}</p>
               <small style="display: block; color: var(--muted); font-weight: 700;">Estoque: ${product.quantity ?? 0} un</small>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; width: 100%;">
+            <div class="shop-card-footer" style="margin-top: 14px;">
               <strong>${product.price}</strong>
               ${isManager ? `
-                <div style="display: flex; gap: 6px;">
+                <div class="shop-card-actions">
                   <button class="ghost-button" type="button" data-edit-product="${product.id}" style="padding: 4px 8px; min-height: 28px; font-size: 0.75rem;">Editar</button>
                   <button class="ghost-button" type="button" data-delete-product="${product.id}" style="padding: 4px 8px; min-height: 28px; font-size: 0.75rem; color: #dc2626; border-color: #fca5a5; background: #fef2f2;">Remover</button>
                 </div>

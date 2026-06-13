@@ -709,17 +709,40 @@ body.dark-mode .accent-dark {
   display: none;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
+  max-width: 100%;
+}
+
+#loja {
+  overflow-x: hidden;
 }
 
 .content-grid.active, .shop-grid, .servant-grid { display: grid; }
 
 .content-card, .shop-card, .servant-card {
   min-height: 185px;
+  min-width: 0;
   display: grid;
   align-content: space-between;
   gap: 16px;
   padding: 16px;
   transition: transform 140ms, box-shadow 140ms;
+}
+
+.shop-card h3, .shop-card p { overflow-wrap: break-word; }
+
+.shop-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.shop-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .content-card:hover, .shop-card:hover {
@@ -791,6 +814,10 @@ body.dark-mode .accent-dark {
   font-size: 0.96rem;
   font-weight: 800;
   letter-spacing: -0.01em;
+}
+
+textarea {
+  resize: none;
 }
 
 /* Inputs */
@@ -868,6 +895,17 @@ select:focus {
 .primary-button.compact { min-height: 44px; }
 
 #contentAddBtn:not(.hidden) { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Pequena animação ao abrir o painel de "Adicionar conteúdo" */
+#contentAdminPanel:not(.hidden) {
+  animation: contentPanelOpen 320ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform-origin: top center;
+}
+
+@keyframes contentPanelOpen {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 .form-message {
   min-height: 20px;
@@ -1442,6 +1480,10 @@ select:focus {
   box-shadow: 0 4px 12px rgba(47,115,248,0.28);
   width: fit-content;
   margin-top: 4px;
+}
+
+.panel-form label.file-upload-btn {
+  color: #fff;
 }
 
 .file-upload-btn:hover {
