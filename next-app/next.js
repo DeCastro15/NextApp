@@ -2637,11 +2637,11 @@ function renderPrayerAdminList() {
           </div>
         ` : ""}
         ${canReply ? `
-          <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <div class="prayer-reply-row">
             <input type="text"
               id="reply-${prayer.id}"
               placeholder="Escreva uma resposta..."
-              style="flex: 1; min-height: 40px; font-size: 0.88rem; padding: 8px 10px;"
+              style="min-height: 40px; font-size: 0.88rem; padding: 8px 10px;"
             />
             <button
               class="primary-button compact"
