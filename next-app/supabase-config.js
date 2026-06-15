@@ -216,23 +216,29 @@ const NextAuth = (() => {
   // no banco (ex: next_users.celula_snooze_until: timestamp).
   // Enquanto mock: comportamento aceitável — snooze some ao limpar cache.
   async function resetPassword(email) {
-    const client = window.originalSupabaseClient || supabaseClient;
+    // Modo mock: simula envio sem depender do Supabase
+    if (USE_MOCK_DB) {
+      console.info('[Mock] resetPassword chamado para:', email, '— simulando sucesso.');
+      return { ok: true, mock: true };
+    }
+
+    const client = supabaseClient;
 
     if (!client) {
       console.error("Supabase não está ligado.");
-      return false;
+      return { ok: false, error: "Serviço indisponível. Tente novamente mais tarde." };
     }
 
-    const { data, error } = await client.auth.resetPasswordForEmail(email, {
+    const { error } = await client.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + '/reset-password.html',
     });
 
     if (error) {
       console.error("Erro ao enviar e-mail:", error.message);
-      return false;
+      return { ok: false, error: error.message };
     }
 
-    return true;
+    return { ok: true };
   }
 
   function currentUser() {
@@ -263,7 +269,7 @@ const NextAuth = (() => {
 // ---------------------------------------------------------------------------
 // Só conecta ao Supabase quando USE_MOCK_DB = false — evita erros de rede no modo mock
 const supabaseClient = (!USE_MOCK_DB && window.supabase) ? window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey) : null;
-window.originalSupabaseClient = (!USE_MOCK_DB && window.supabase) ? window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey) : null;
+window.originalSupabaseClient = supabaseClient; // Mesmo objeto — evita WebSockets duplicados
 
 const NextDB = (() => {
   function getAll(collection) {

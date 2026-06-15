@@ -266,9 +266,9 @@ const playlists = [
   },
   {
     id: 'pl4',
-    title: "Fire — Gospel Rap BR",
-    text: "Rap gospel nacional que representa a fé sem vergonha.",
-    description: "Para quem representa Jesus no estilo. Os melhores do gospel rap brasileiro reunidos em uma playlist que não deixa o fogo apagar.",
+    title: "Pós-culto",
+    text: "Músicas para continuar refletindo após o culto.",
+    description: "Depois do culto, mantenha a conexão com Deus. Essa playlist tem músicas mais calmas e reflexivas para você meditar no que foi vivido durante o culto e levar a presença de Deus para o resto da semana.",
     tracks: 31,
     duration: "2h 04min",
     emoji: "🎤",
