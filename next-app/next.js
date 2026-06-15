@@ -781,6 +781,54 @@ function maybeShowWelcome() {
   modal.style.display = 'grid';
 }
 
+function renderHeroPanel() {
+  const eyebrow = document.querySelector('.hero-copy .eyebrow');
+  const h2      = document.querySelector('.hero-copy h2');
+  const sub     = document.querySelector('.hero-copy p');
+  if (!eyebrow || !h2 || !sub) return;
+
+  const now      = new Date();
+  const todayDay = now.getDate();
+  const todayMon = now.toLocaleDateString('pt-BR', { month: 'long' });
+
+  // Eventos visíveis para este usuário, ordenados por data
+  const events = getEvents().sort((a, b) => Number(a.date) - Number(b.date));
+
+  // Evento de hoje (mesmo dia e mês)
+  const todayEvent = events.find(e =>
+    Number(e.date) === todayDay &&
+    (e.month || '').toLowerCase() === todayMon.toLowerCase()
+  );
+
+  if (todayEvent) {
+    eyebrow.textContent = 'Hoje';
+    h2.textContent      = `Hoje tem ${todayEvent.title} às ${todayEvent.time}`;
+    sub.textContent     = todayEvent.text || 'Não perca, vem aí um encontro incrível!';
+    return;
+  }
+
+  // Próximo evento (data maior que hoje, mesmo mês)
+  const futureEvents = events.filter(e => {
+    const sameMonth = (e.month || '').toLowerCase() === todayMon.toLowerCase();
+    return sameMonth && Number(e.date) > todayDay;
+  });
+
+  if (futureEvents.length) {
+    const next   = futureEvents[0];
+    const diff   = Number(next.date) - todayDay;
+    const inDays = diff === 1 ? 'amanhã' : `em ${diff} dias`;
+    eyebrow.textContent = 'Próximo encontro';
+    h2.textContent      = `${next.title} ${inDays}`;
+    sub.textContent     = `${next.weekDay || ''}, dia ${next.date} às ${next.time}${next.location ? ' — ' + next.location : ''}`.trim();
+    return;
+  }
+
+  // Nenhum evento visível no mês
+  eyebrow.textContent = 'Agenda';
+  h2.textContent      = 'Nenhum evento por hoje';
+  sub.textContent     = 'Fique ligado, novidades chegando em breve!';
+}
+
 function renderFeed() {
   document.querySelector("#feedList").innerHTML = getPosts()
     .map(
@@ -5130,7 +5178,7 @@ async function boot() {
 
   const renders = [
     renderGroupList, renderGroupChat, renderChecklist,
-    renderFeed, renderDailyVerse, renderBirthdays,
+    renderHeroPanel, renderFeed, renderDailyVerse, renderBirthdays,
     renderCalendar, renderContent, renderShop,
     renderMyPrayers, cleanOldBRPosts, renderBibleRats,
     renderCultStatus, renderChatContacts, renderYoungChat,
@@ -5177,6 +5225,7 @@ async function boot() {
             if (table === 'next_prayers') updatePrayerBadge();
             if (table === 'next_journey_requests' && active.id === 'gestao') renderJourneyApprovalList();
             if (table === 'next_events' && active.id === 'agenda') renderCalendar();
+            if (table === 'next_events' && active.id === 'home') renderHeroPanel();
             if (table === 'next_posts' && active.id === 'home') renderFeed();
             if (table === 'next_scales' && active.id === 'servos') renderMyScales();
           })
@@ -5193,7 +5242,7 @@ async function boot() {
         updatePrayerBadge();
         if (active.id === 'oracao') renderMyPrayers();
         if (active.id === 'gestao') renderPrayerAdminList();
-        if (active.id === 'home') { renderFeed(); renderCultStatus(); renderDailyVerse(); renderBirthdays(); }
+        if (active.id === 'home') { renderHeroPanel(); renderFeed(); renderCultStatus(); renderDailyVerse(); renderBirthdays(); }
         if (active.id === 'agenda') renderCalendar();
       }, 15000);
     }

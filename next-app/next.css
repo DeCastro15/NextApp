@@ -1958,6 +1958,50 @@ body.dark-mode .escala-col { border-color: #000; }
   /* Agenda card: stack verticalmente no mobile */
   .agenda-card { grid-template-columns: 60px minmax(0,1fr); }
 
+  /* ── Agenda: calendário compacto para caber na tela sem scroll ── */
+
+  /* Chips menores para o calendário mensal caber na tela */
+  .calendar-strip {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 4px;
+    overflow-x: hidden;
+    margin-bottom: 10px;
+  }
+
+  .day-chip {
+    min-height: 52px;
+    min-width: 0;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    gap: 2px;
+    padding: 4px 2px;
+  }
+
+  .day-chip span {
+    font-size: 0.58rem;
+    letter-spacing: 0.02em;
+  }
+
+  .event-dot { width: 4px; height: 4px; }
+
+  /* Lista de eventos: altura limitada com scroll interno invisível */
+  .agenda-list {
+    max-height: 30dvh;
+    overflow-y: auto;
+    scrollbar-width: none;
+    margin-bottom: 10px;
+  }
+  .agenda-list::-webkit-scrollbar { display: none; }
+
+  /* Detalhe do evento: altura limitada com scroll interno invisível */
+  .agenda-detail {
+    max-height: 28dvh;
+    overflow-y: auto;
+    scrollbar-width: none;
+    margin-top: 0;
+  }
+  .agenda-detail::-webkit-scrollbar { display: none; }
+
   /* Chat form: stack vertical */
   .chat-form textarea { min-height: 48px; }
 
