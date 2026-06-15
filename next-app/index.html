@@ -379,7 +379,7 @@
 
       .cell-card {
         border: 1.5px solid var(--line);
-        border-radius: 12px;
+        border-radius: 16px;
         padding: 14px 16px;
         transition: border-color 160ms, box-shadow 160ms;
       }
@@ -511,6 +511,297 @@
         .login-card h2 { font-size: 1.35rem; }
         button[type="submit"], .btn-primary { min-height: 46px; }
       }
+
+      /* ═══════════════════════════════════════════════════
+         MOBILE LOGIN — layout exclusivo para telas ≤ 600px
+         ═══════════════════════════════════════════════════ */
+      @media (max-width: 600px) {
+        /* Oculta o layout desktop inteiro */
+        .login-shell { display: none !important; }
+
+        body {
+          padding: 0;
+          align-items: flex-start;
+          background: #0a0f1e;
+          min-height: 100dvh;
+        }
+
+        /* Container principal mobile */
+        .mobile-login {
+          display: flex;
+          flex-direction: column;
+          min-height: 100dvh;
+          width: 100%;
+        }
+
+        /* Hero */
+        .m-hero {
+          position: relative;
+          padding: 56px 24px 36px;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .m-hero::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(ellipse 100% 80% at 80% 0%, rgba(47,115,248,0.35) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 50% at 10% 90%, rgba(183,255,60,0.10) 0%, transparent 55%);
+          pointer-events: none;
+        }
+
+        .m-logo-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 28px;
+          position: relative;
+          z-index: 1;
+        }
+
+        .m-logo-img {
+          width: 58px; height: 58px;
+          object-fit: contain;
+        }
+
+        .m-eyebrow {
+          font-size: 13px;
+          font-weight: 800;
+          color: rgba(255,255,255,0.5);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .m-hero h1 {
+          font-size: clamp(1.9rem, 7.5vw, 2.6rem);
+          font-weight: 800;
+          color: #fff;
+          line-height: 1.06;
+          letter-spacing: -0.02em;
+          margin: 0 0 8px;
+          position: relative;
+          z-index: 1;
+        }
+
+        .m-hero h1 em { color: #b7ff3c; font-style: normal; }
+
+        .m-hero-sub {
+          font-size: 13px;
+          color: rgba(255,255,255,0.52);
+          font-weight: 500;
+          position: relative;
+          z-index: 1;
+        }
+
+        /* Card branco que sobe sobre o hero */
+        .m-card {
+          flex: 1;
+          background: #fff;
+          border-radius: 24px 24px 0 0;
+          padding: 28px 20px 40px;
+          margin-top: -16px;
+          position: relative;
+          z-index: 2;
+          box-shadow: 0 -4px 32px rgba(0,0,0,0.15);
+        }
+
+        /* Tabs Entrar / Criar conta */
+        .m-tabs {
+          display: flex;
+          background: #f1f3f9;
+          border-radius: 16px;
+          padding: 4px;
+          margin-bottom: 24px;
+          gap: 4px;
+        }
+
+        .m-tab {
+          flex: 1;
+          text-align: center;
+          padding: 10px 0;
+          font-size: 13.5px;
+          font-weight: 800;
+          color: #6b7280;
+          border-radius: 9px;
+          cursor: pointer;
+          border: none;
+          background: transparent;
+          font-family: inherit;
+          transition: background 180ms, color 180ms, box-shadow 180ms;
+        }
+
+        .m-tab.active {
+          background: #fff;
+          color: #111827;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+        }
+
+        /* Painéis de conteúdo das tabs */
+        .m-panel { display: none; }
+        .m-panel.active { display: block; }
+
+        /* Labels dos campos */
+        .m-field { margin-bottom: 14px; }
+
+        .m-label {
+          font-size: 11px;
+          font-weight: 800;
+          color: #374151;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          margin-bottom: 7px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .m-label a {
+          font-size: 12px;
+          font-weight: 700;
+          color: var(--blue);
+          text-decoration: none;
+          text-transform: none;
+          letter-spacing: normal;
+        }
+
+        /* Inputs com ícone */
+        .m-input-wrap {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .m-input-icon {
+          position: absolute;
+          left: 14px;
+          color: #9ca3af;
+          font-size: 18px;
+          pointer-events: none;
+          display: flex;
+        }
+
+        .m-input-eye {
+          position: absolute;
+          right: 14px;
+          color: #9ca3af;
+          font-size: 18px;
+          cursor: pointer;
+          display: flex;
+          background: none;
+          border: none;
+          padding: 0;
+        }
+
+        .m-input-wrap input {
+          padding-left: 42px !important;
+          border-radius: 12px !important;
+          background: #f9fafb !important;
+          font-size: 15px !important;
+        }
+
+        .m-input-wrap input[type="password"],
+        .m-input-wrap input.has-eye { padding-right: 42px !important; }
+
+        /* Botão principal */
+        .m-btn-main {
+          width: 100%;
+          min-height: 52px;
+          background: var(--blue);
+          border: none;
+          border-radius: 14px;
+          color: #fff;
+          font: inherit;
+          font-size: 15px;
+          font-weight: 900;
+          cursor: pointer;
+          box-shadow: 0 6px 20px rgba(47,115,248,0.35);
+          transition: background 160ms, transform 80ms, box-shadow 160ms;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          margin-bottom: 18px;
+        }
+
+        .m-btn-main:hover { background: #1655d5; }
+        .m-btn-main:active { transform: scale(0.98); }
+
+        /* Divisor "ou" */
+        .m-divider {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 16px;
+        }
+
+        .m-div-line { flex: 1; height: 1px; background: #e5e7eb; }
+        .m-div-text { font-size: 12px; color: #9ca3af; font-weight: 600; white-space: nowrap; }
+
+        /* Botão Google */
+        .m-btn-google {
+          width: 100%;
+          min-height: 48px;
+          border: 1.5px solid #e5e7eb;
+          border-radius: 14px;
+          background: #fff;
+          color: #374151;
+          font: inherit;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          transition: background 160ms, border-color 160ms;
+        }
+
+        .m-btn-google:hover { background: #f9fafb; border-color: #d1d5db; }
+
+        .m-google-icon {
+          width: 20px; height: 20px;
+          background: conic-gradient(#4285F4 90deg, #EA4335 90deg 180deg, #FBBC04 180deg 270deg, #34A853 270deg);
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        /* Slide de cadastro */
+        .m-slide-outer { overflow: hidden; }
+        .m-slide-wrapper {
+          display: flex;
+          width: 200%;
+          transition: transform 480ms cubic-bezier(0.4,0,0.2,1);
+        }
+        .m-slide-wrapper.shifted { transform: translateX(-50%); }
+        .m-slide-panel { width: 50%; flex-shrink: 0; }
+        #mRegStep2 { visibility: hidden; pointer-events: none; transition: visibility 0s 480ms; }
+        .m-slide-wrapper.shifted #mRegStep2 { visibility: visible; pointer-events: auto; transition: visibility 0s 0s; }
+
+        /* Recuperação de senha no mobile */
+        #mForgotPanel { display: none; }
+        #mForgotPanel.active { display: block; }
+
+        .m-back-btn {
+          background: transparent;
+          border: 1.5px solid var(--line);
+          border-radius: 16px;
+          color: var(--ink);
+          font: inherit;
+          font-weight: 800;
+          font-size: 14px;
+          min-height: 48px;
+          width: 100%;
+          cursor: pointer;
+          margin-top: 8px;
+        }
+      }
+
+      /* Desktop: esconde o mobile */
+      @media (min-width: 601px) {
+        .mobile-login { display: none !important; }
+      }
     </style>
   </head>
   <body>
@@ -529,6 +820,189 @@
       <p class="splash-tagline">🔥 A gen that burns for Jesus</p>
       <div class="splash-bar"></div>
     </div>
+
+    <!-- ══════════════════════════════════════════
+         MOBILE LOGIN (≤ 600px)
+         ══════════════════════════════════════════ -->
+    <div class="mobile-login" id="mobileLogin" aria-label="Tela de login mobile">
+
+      <!-- Hero -->
+      <div class="m-hero">
+        <div class="m-logo-row">
+          <img src="assets/next-logo.svg" alt="Next" class="m-logo-img" />
+          <div>
+            <p class="m-eyebrow">AD Fonte de Vida</p>
+          </div>
+        </div>
+        <h1>Bem-vindo à<br><em>Next</em> 🔥</h1>
+        <p class="m-hero-sub">A gen that burns for Jesus</p>
+      </div>
+
+      <!-- Card branco -->
+      <div class="m-card">
+
+        <!-- Tabs -->
+        <div class="m-tabs" role="tablist">
+          <button class="m-tab active" id="mTabLogin" role="tab" aria-selected="true" aria-controls="mLoginPanel">Entrar</button>
+          <button class="m-tab" id="mTabRegister" role="tab" aria-selected="false" aria-controls="mRegisterPanel">Criar conta</button>
+        </div>
+
+        <!-- Painel: Login -->
+        <div class="m-panel active" id="mLoginPanel" role="tabpanel">
+          <form id="mLoginForm">
+            <div class="m-field">
+              <div class="m-label">E-mail</div>
+              <div class="m-input-wrap">
+                <span class="m-input-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+                </span>
+                <input id="mEmail" type="email" autocomplete="email" placeholder="seu@email.com" required />
+              </div>
+            </div>
+
+            <div class="m-field">
+              <div class="m-label">
+                Senha
+                <a href="#" id="mShowForgot">Esqueceu a senha?</a>
+              </div>
+              <div class="m-input-wrap">
+                <span class="m-input-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </span>
+                <input id="mPassword" type="password" class="has-eye" autocomplete="current-password" placeholder="••••••••" required />
+                <button type="button" class="m-input-eye" id="mToggleEye" aria-label="Mostrar/ocultar senha">
+                  <svg id="mEyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="m-btn-main">
+              Entrar
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
+            <p class="message" id="mMessage" role="status" style="margin-bottom:12px;"></p>
+          </form>
+
+          <div class="m-divider">
+            <div class="m-div-line"></div>
+            <span class="m-div-text">ou continue com</span>
+            <div class="m-div-line"></div>
+          </div>
+
+          <button type="button" class="m-btn-google" id="mGoogleBtn">
+            <div class="m-google-icon" aria-hidden="true"></div>
+            Entrar com Google
+          </button>
+        </div>
+
+        <!-- Painel: Criar conta -->
+        <div class="m-panel" id="mRegisterPanel" role="tabpanel">
+          <div class="m-slide-outer">
+            <div class="m-slide-wrapper" id="mSlideWrapper">
+
+              <!-- Etapa 1 -->
+              <div class="m-slide-panel" id="mRegStep1">
+                <form id="mRegisterForm">
+                  <div class="m-field">
+                    <div class="m-label">Nome e Sobrenome</div>
+                    <div class="m-input-wrap">
+                      <span class="m-input-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+                      </span>
+                      <input id="mRegName" type="text" placeholder="Seu nome completo" required />
+                    </div>
+                  </div>
+                  <div class="m-field">
+                    <div class="m-label">E-mail</div>
+                    <div class="m-input-wrap">
+                      <span class="m-input-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+                      </span>
+                      <input id="mRegEmail" type="email" placeholder="seu@email.com" required />
+                    </div>
+                  </div>
+                  <div class="m-field">
+                    <div class="m-label">Senha (mín. 6 caracteres)</div>
+                    <div class="m-input-wrap">
+                      <span class="m-input-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                      </span>
+                      <input id="mRegPassword" type="password" minlength="6" placeholder="••••••••" required />
+                    </div>
+                  </div>
+                  <button type="submit" class="m-btn-main">Criar Conta</button>
+                  <p class="message" id="mRegMessage" role="status"></p>
+                </form>
+              </div>
+
+              <!-- Etapa 2: perfil -->
+              <div class="m-slide-panel" id="mRegStep2">
+                <form id="mProfileStep2Form">
+                  <div class="m-field">
+                    <div class="m-label">Idade</div>
+                    <div class="m-input-wrap">
+                      <span class="m-input-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                      </span>
+                      <input id="mProfAge" type="number" min="10" max="40" placeholder="Ex: 17" required />
+                    </div>
+                  </div>
+                  <div class="m-field">
+                    <div class="m-label">Telefone / WhatsApp</div>
+                    <div class="m-input-wrap">
+                      <span class="m-input-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 4 4.15 2 2 0 0 1 6 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L10.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 24 16.92z"/></svg>
+                      </span>
+                      <input id="mProfPhone" type="tel" placeholder="(27) 9 0000-0000" />
+                    </div>
+                  </div>
+                  <div class="m-field">
+                    <div class="m-label">Cidade</div>
+                    <select id="mProfCity" required style="padding-left:14px!important;border-radius:12px!important;">
+                      <option value="" disabled selected>Selecione sua cidade</option>
+                      <option value="Serra">Serra</option>
+                      <option value="Vila Velha">Vila Velha</option>
+                      <option value="Vitória">Vitória</option>
+                    </select>
+                  </div>
+                  <div class="m-field">
+                    <div class="m-label">Participa de célula?</div>
+                    <div class="toggle-row">
+                      <button type="button" class="toggle-btn" id="mCellYes">Sim 🙌</button>
+                      <button type="button" class="toggle-btn" id="mCellNo">Não</button>
+                    </div>
+                    <input type="hidden" id="mProfCell" value="" />
+                  </div>
+                  <button type="submit" class="m-btn-main">Entrar no Next</button>
+                  <p class="message" id="mProfMessage" role="status"></p>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Painel: Esqueci senha -->
+        <div id="mForgotPanel">
+          <p style="color:var(--muted);font-size:14px;margin-bottom:18px;">Enviaremos um link de recuperação para o seu e-mail.</p>
+          <form id="mForgotForm">
+            <div class="m-field">
+              <div class="m-label">E-mail cadastrado</div>
+              <div class="m-input-wrap">
+                <span class="m-input-icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
+                </span>
+                <input id="mForgotEmail" type="email" placeholder="nome@email.com" required />
+              </div>
+            </div>
+            <button type="submit" class="m-btn-main">Enviar link</button>
+            <p class="message" id="mForgotMessage" role="status" style="margin-bottom:8px;"></p>
+          </form>
+          <button type="button" class="m-back-btn" id="mBackToLogin">← Voltar para o login</button>
+        </div>
+
+      </div><!-- /.m-card -->
+    </div><!-- /.mobile-login -->
 
     <!-- ── Cell popup ── -->
     <div class="cell-overlay hidden" id="cellOverlay">
@@ -1021,6 +1495,182 @@
         document.querySelector('#forgotEmail').value = '';
       });
     </script>
+    <!-- ══════════════════════════════════════════
+         MOBILE LOGIN — JavaScript
+         ══════════════════════════════════════════ -->
+    <script>
+      (function () {
+        const mobileEl = document.getElementById('mobileLogin');
+        if (!mobileEl || window.getComputedStyle(mobileEl).display === 'none') return;
+
+        // ── Tabs ──────────────────────────────────────────────────────────────
+        const tabLogin    = document.getElementById('mTabLogin');
+        const tabRegister = document.getElementById('mTabRegister');
+        const panelLogin  = document.getElementById('mLoginPanel');
+        const panelReg    = document.getElementById('mRegisterPanel');
+        const forgotPanel = document.getElementById('mForgotPanel');
+
+        function showTab(tab) {
+          [tabLogin, tabRegister].forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected','false'); });
+          [panelLogin, panelReg].forEach(p => p.classList.remove('active'));
+          forgotPanel.style.display = 'none';
+          tab.classList.add('active');
+          tab.setAttribute('aria-selected','true');
+          if (tab === tabLogin) panelLogin.classList.add('active');
+          else panelReg.classList.add('active');
+        }
+
+        tabLogin.addEventListener('click', () => showTab(tabLogin));
+        tabRegister.addEventListener('click', () => showTab(tabRegister));
+
+        // ── Toggle olho senha ─────────────────────────────────────────────────
+        const mPasswordInput = document.getElementById('mPassword');
+        document.getElementById('mToggleEye').addEventListener('click', () => {
+          mPasswordInput.type = mPasswordInput.type === 'text' ? 'password' : 'text';
+        });
+
+        // ── Esqueci senha ──────────────────────────────────────────────────────
+        document.getElementById('mShowForgot').addEventListener('click', e => {
+          e.preventDefault();
+          panelLogin.classList.remove('active');
+          tabLogin.classList.remove('active');
+          forgotPanel.style.display = 'block';
+        });
+
+        document.getElementById('mBackToLogin').addEventListener('click', () => {
+          forgotPanel.style.display = 'none';
+          panelLogin.classList.add('active');
+          tabLogin.classList.add('active');
+          tabLogin.setAttribute('aria-selected','true');
+          document.getElementById('mForgotMessage').textContent = '';
+        });
+
+        document.getElementById('mForgotForm').addEventListener('submit', async e => {
+          e.preventDefault();
+          const msg = document.getElementById('mForgotMessage');
+          msg.textContent = 'Enviando...';
+          msg.style.color = '';
+          await NextAuth.resetPassword(document.getElementById('mForgotEmail').value.trim());
+          msg.textContent = 'Se o e-mail estiver cadastrado, você receberá um link de recuperação.';
+          msg.style.color = '#10b981';
+          document.getElementById('mForgotEmail').value = '';
+        });
+
+        // ── Login ──────────────────────────────────────────────────────────────
+        document.getElementById('mLoginForm').addEventListener('submit', async e => {
+          e.preventDefault();
+          const msg = document.getElementById('mMessage');
+
+          if (typeof NextSecurity !== 'undefined' && NextSecurity.isLockedOut()) {
+            msg.textContent = `🔒 Muitas tentativas. Aguarde ${Math.ceil(NextSecurity.lockoutSecondsLeft()/60)} minuto(s).`;
+            msg.style.color = '#dc2626';
+            return;
+          }
+
+          msg.textContent = 'Carregando...';
+          msg.style.color = '';
+
+          let user;
+          try {
+            user = await NextAuth.login(
+              document.getElementById('mEmail').value.trim(),
+              document.getElementById('mPassword').value
+            );
+          } catch (err) {
+            msg.textContent = err.message || 'Erro ao entrar. Tente novamente.';
+            msg.style.color = '#dc2626';
+            return;
+          }
+
+          if (!user) {
+            msg.textContent = 'E-mail ou senha inválidos.';
+            msg.style.color = '#dc2626';
+            return;
+          }
+          msg.style.color = '';
+          checkCellPopup(user);
+        });
+
+        // ── Google (stub) ─────────────────────────────────────────────────────
+        document.getElementById('mGoogleBtn').addEventListener('click', () => {
+          alert('Login com Google em breve! 🚀');
+        });
+
+        // ── Cadastro ──────────────────────────────────────────────────────────
+        let mPendingUser = null;
+        let mCellChoice  = null;
+
+        document.getElementById('mCellYes').addEventListener('click', () => {
+          mCellChoice = 'yes';
+          document.getElementById('mCellYes').classList.add('active');
+          document.getElementById('mCellNo').classList.remove('active');
+          document.getElementById('mProfCell').value = 'yes';
+        });
+
+        document.getElementById('mCellNo').addEventListener('click', () => {
+          mCellChoice = 'no';
+          document.getElementById('mCellNo').classList.add('active');
+          document.getElementById('mCellYes').classList.remove('active');
+          document.getElementById('mProfCell').value = 'no';
+        });
+
+        document.getElementById('mRegisterForm').addEventListener('submit', async e => {
+          e.preventDefault();
+          const msg = document.getElementById('mRegMessage');
+          msg.textContent = 'Criando conta...';
+          msg.style.color = '';
+
+          let user;
+          try {
+            user = await NextAuth.register(
+              document.getElementById('mRegName').value.trim(),
+              document.getElementById('mRegEmail').value.trim(),
+              document.getElementById('mRegPassword').value
+            );
+          } catch (err) {
+            msg.textContent = err.message || 'Erro ao criar conta.';
+            msg.style.color = '#dc2626';
+            return;
+          }
+
+          if (!user) {
+            msg.textContent = 'Erro ao criar conta. Tente outro e-mail.';
+            msg.style.color = '#dc2626';
+            return;
+          }
+
+          mPendingUser = user;
+          document.getElementById('mSlideWrapper').classList.add('shifted');
+        });
+
+        document.getElementById('mProfileStep2Form').addEventListener('submit', async e => {
+          e.preventDefault();
+          if (!mCellChoice) {
+            document.getElementById('mProfMessage').textContent = 'Selecione se você participa de célula.';
+            return;
+          }
+
+          const age     = parseInt(document.getElementById('mProfAge').value) || null;
+          const phone   = document.getElementById('mProfPhone').value.trim();
+          const city    = document.getElementById('mProfCity').value;
+          const hasCell = mCellChoice === 'yes';
+
+          NextAuth.updateSession({ age, phone, city, hasCell });
+
+          if (mPendingUser) {
+            await NextDB.save('next_users', { ...mPendingUser, age, phone, city, hasCell });
+          }
+
+          const freshUser = NextAuth.currentUser();
+          if (!hasCell) {
+            showCellPopup(freshUser || { city, id: mPendingUser?.id, name: mPendingUser?.name });
+          } else {
+            window.location.href = 'next.html';
+          }
+        });
+      })();
+    </script>
+
     <script>
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js');
