@@ -713,7 +713,13 @@ function setView(target) {
   pageTitle.textContent = nextView.dataset.title || "Next";
   document.body.classList.remove("menu-open");
 
-  if (target === "conversa") markMessagesAsSeen();
+  if (target === "conversa") {
+    markMessagesAsSeen();
+    // Garante que o toggle anônimo some para liderança ao abrir a aba
+    const isStaff = ["lider", "pastor", "missionaria", "admin", "sublider"].includes(currentUser.role);
+    const anonToggle = document.querySelector(".anon-toggle");
+    if (anonToggle) anonToggle.style.display = isStaff ? "none" : "";
+  }
   if (target === "oracao") markPrayerAsSeen();
   if (target === "grupos") { renderGroupList(); renderGroupChat(); renderChecklist(); }
   if (target === "mensagens") { renderLeaderInbox(); markMessagesAsSeen(); }
@@ -729,6 +735,9 @@ function setView(target) {
     renderMyScales();
   }
   if (target === "biblerats") renderBibleRats();
+
+  // Fecha o painel de chat mobile ao trocar de aba
+  document.querySelectorAll('.chat-layout').forEach(l => closeMobileChat(l));
 }
 
 function setupSessionUi() {
@@ -738,6 +747,13 @@ function setupSessionUi() {
     day: "numeric",
     month: "long",
   });
+
+  // Esconde botão anônimo para liderança (eles não mandam mensagens anônimas)
+  const anonToggle = document.querySelector(".anon-toggle");
+  if (anonToggle) {
+    const isStaff = ["lider", "pastor", "missionaria", "admin", "sublider"].includes(currentUser.role);
+    anonToggle.style.display = isStaff ? "none" : "";
+  }
 
   // Ajusta label do quick-card de conversa conforme o role
   const isLeader = ["lider", "pastor", "missionaria", "admin", "sublider"].includes(currentUser.role);
@@ -779,54 +795,6 @@ function maybeShowWelcome() {
     WELCOME_VERSES[Math.floor(Math.random() * WELCOME_VERSES.length)];
 
   modal.style.display = 'grid';
-}
-
-function renderHeroPanel() {
-  const eyebrow = document.querySelector('.hero-copy .eyebrow');
-  const h2      = document.querySelector('.hero-copy h2');
-  const sub     = document.querySelector('.hero-copy p');
-  if (!eyebrow || !h2 || !sub) return;
-
-  const now      = new Date();
-  const todayDay = now.getDate();
-  const todayMon = now.toLocaleDateString('pt-BR', { month: 'long' });
-
-  // Eventos visíveis para este usuário, ordenados por data
-  const events = getEvents().sort((a, b) => Number(a.date) - Number(b.date));
-
-  // Evento de hoje (mesmo dia e mês)
-  const todayEvent = events.find(e =>
-    Number(e.date) === todayDay &&
-    (e.month || '').toLowerCase() === todayMon.toLowerCase()
-  );
-
-  if (todayEvent) {
-    eyebrow.textContent = 'Hoje';
-    h2.textContent      = `Hoje tem ${todayEvent.title} às ${todayEvent.time}`;
-    sub.textContent     = todayEvent.text || 'Não perca, vem aí um encontro incrível!';
-    return;
-  }
-
-  // Próximo evento (data maior que hoje, mesmo mês)
-  const futureEvents = events.filter(e => {
-    const sameMonth = (e.month || '').toLowerCase() === todayMon.toLowerCase();
-    return sameMonth && Number(e.date) > todayDay;
-  });
-
-  if (futureEvents.length) {
-    const next   = futureEvents[0];
-    const diff   = Number(next.date) - todayDay;
-    const inDays = diff === 1 ? 'amanhã' : `em ${diff} dias`;
-    eyebrow.textContent = 'Próximo encontro';
-    h2.textContent      = `${next.title} ${inDays}`;
-    sub.textContent     = `${next.weekDay || ''}, dia ${next.date} às ${next.time}${next.location ? ' — ' + next.location : ''}`.trim();
-    return;
-  }
-
-  // Nenhum evento visível no mês
-  eyebrow.textContent = 'Agenda';
-  h2.textContent      = 'Nenhum evento por hoje';
-  sub.textContent     = 'Fique ligado, novidades chegando em breve!';
 }
 
 function renderFeed() {
@@ -2057,6 +2025,33 @@ function leaderAvatarHtml(name, className = "leader-avatar") {
   return `<span class="${className}">${initials(name)}</span>`;
 }
 
+// ── Mobile chat: navegação estilo WhatsApp ──────────────
+function isMobileView() {
+  return window.innerWidth <= 640;
+}
+
+function openMobileChat(layoutEl) {
+  if (!isMobileView() || !layoutEl) return;
+  layoutEl.classList.add('mobile-chat-open');
+}
+
+function closeMobileChat(layoutEl) {
+  if (!layoutEl) return;
+  layoutEl.classList.remove('mobile-chat-open');
+}
+
+function ensureChatBackBtn(chatHeadEl, layoutEl) {
+  if (!chatHeadEl || !layoutEl) return;
+  if (chatHeadEl.querySelector('.chat-back-btn')) return; // já existe
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'chat-back-btn';
+  btn.setAttribute('aria-label', 'Voltar');
+  btn.innerHTML = '&#8592;';
+  btn.addEventListener('click', () => closeMobileChat(layoutEl));
+  chatHeadEl.insertBefore(btn, chatHeadEl.firstChild);
+}
+
 function renderChatContacts() {
   const listEl = document.querySelector("#leaderList");
   if (!listEl) return;
@@ -2116,7 +2111,7 @@ function renderYoungChat() {
   const chatWindow = document.querySelector("#chatWindow");
   if (!chatWindow) return;
 
-  const isLeader = ["lider", "pastor", "missionaria", "admin"].includes(currentUser.role);
+  const isLeader = ["lider", "pastor", "missionaria", "admin", "sublider"].includes(currentUser.role);
   
   const anonToggle = document.querySelector(".anon-toggle");
   if (anonToggle) anonToggle.style.display = isLeader ? "none" : "flex";
@@ -4871,6 +4866,10 @@ function bindEvents() {
     chatTargetId = btn.dataset.chatId;
     renderChatContacts();
     renderYoungChat();
+    const layout = document.querySelector("#conversa .chat-layout");
+    const head   = document.querySelector("#conversa .chat-head");
+    ensureChatBackBtn(head, layout);
+    openMobileChat(layout);
   });
 
   document.querySelector("#chatForm")?.addEventListener("submit", (event) => {
@@ -4889,6 +4888,10 @@ function bindEvents() {
     if (!button) return;
     selectedThreadId = button.dataset.thread;
     renderLeaderInbox();
+    const layout = document.querySelector("#mensagens .chat-layout");
+    const head   = document.querySelector("#mensagens .chat-head");
+    ensureChatBackBtn(head, layout);
+    openMobileChat(layout);
   });
 
   document.querySelector("#leaderReplyForm")?.addEventListener("submit", (event) => {
@@ -5178,7 +5181,7 @@ async function boot() {
 
   const renders = [
     renderGroupList, renderGroupChat, renderChecklist,
-    renderHeroPanel, renderFeed, renderDailyVerse, renderBirthdays,
+    renderFeed, renderDailyVerse, renderBirthdays,
     renderCalendar, renderContent, renderShop,
     renderMyPrayers, cleanOldBRPosts, renderBibleRats,
     renderCultStatus, renderChatContacts, renderYoungChat,
@@ -5225,7 +5228,6 @@ async function boot() {
             if (table === 'next_prayers') updatePrayerBadge();
             if (table === 'next_journey_requests' && active.id === 'gestao') renderJourneyApprovalList();
             if (table === 'next_events' && active.id === 'agenda') renderCalendar();
-            if (table === 'next_events' && active.id === 'home') renderHeroPanel();
             if (table === 'next_posts' && active.id === 'home') renderFeed();
             if (table === 'next_scales' && active.id === 'servos') renderMyScales();
           })
@@ -5242,7 +5244,7 @@ async function boot() {
         updatePrayerBadge();
         if (active.id === 'oracao') renderMyPrayers();
         if (active.id === 'gestao') renderPrayerAdminList();
-        if (active.id === 'home') { renderHeroPanel(); renderFeed(); renderCultStatus(); renderDailyVerse(); renderBirthdays(); }
+        if (active.id === 'home') { renderFeed(); renderCultStatus(); renderDailyVerse(); renderBirthdays(); }
         if (active.id === 'agenda') renderCalendar();
       }, 15000);
     }
